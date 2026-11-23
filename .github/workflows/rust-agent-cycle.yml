@@ -31,7 +31,35 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Gate on a qualifying completed Rust CI result
+        id: gate
+        env:
+          EVENT_PATH: ${{ github.event_path }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          event = json.load(open(os.environ["EVENT_PATH"], encoding="utf-8"))
+          run = event.get("workflow_run", {})
+          branch = run.get("head_branch")
+          conclusion = run.get("conclusion")
+          message = (run.get("head_commit") or {}).get("message", "")
+          qualifies = (
+              branch == "main"
+              and conclusion == "success"
+              and message.startswith("[agent-bootstrap]")
+          ) or (
+              branch == "agents/rust-autonomy"
+              and run.get("event") == "workflow_dispatch"
+              and conclusion in ("success", "failure")
+          )
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write("run_agent=" + ("true" if qualifies else "false") + "\\n")
+          PY
+
       - name: Restore local Ollama runtime and model
+        if: steps.gate.outputs.run_agent == 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -41,6 +69,7 @@ jobs:
           key: ollama-v0.40.17-qwen2.5-coder-7b-${{ runner.os }}
 
       - name: Install verified Ollama runtime when cache is absent
+        if: steps.gate.outputs.run_agent == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -60,6 +89,7 @@ jobs:
           mkdir -p "$HOME/.ollama/models"
 
       - name: Start local model and verify it is available
+        if: steps.gate.outputs.run_agent == 'true'
         env:
           OLLAMA_HOST: 127.0.0.1:11434
           AGENT_MODEL: qwen2.5-coder:7b
@@ -80,7 +110,7 @@ jobs:
           ollama show "$AGENT_MODEL" >/dev/null
 
       - name: Collect failed Rust CI logs for repair
-        if: github.event.workflow_run.conclusion == 'failure'
+        if: steps.gate.outputs.run_agent == 'true' && github.event.workflow_run.conclusion == 'failure'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ github.event.workflow_run.id }}
@@ -91,6 +121,7 @@ jobs:
             > "$RUNNER_TEMP/rust-ci-failed.log" || true
 
       - name: Run planner, implementer and reviewer
+        if: steps.gate.outputs.run_agent == 'true'
         env:
           AGENT_MODE: ${{ github.event.workflow_run.conclusion == 'success' && 'advance' || 'repair' }}
           AGENT_MODEL: qwen2.5-coder:7b
