@@ -799,7 +799,7 @@ fn make_player(id: u32, name: &str, position: Position, age: u8, base: u8, seed:
         goalkeeping: rating(-8, next(seed)),
         stamina: rating(2, next(seed)),
     };
-    let player = Player {
+    Player {
         id,
         name: name.into(),
         position,
@@ -815,8 +815,7 @@ fn make_player(id: u32, name: &str, position: Position, age: u8, base: u8, seed:
         appearances: 0,
         goals: 0,
         assists: 0,
-    };
-    player
+    }
 }
 
 fn generate_market(seed: &mut u64) -> Vec<TransferTarget> {
