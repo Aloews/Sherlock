@@ -1,0 +1,22 @@
+[package]
+name = "sherlock-web"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "sherlock-web"
+path = "src/main.rs"
+
+[dependencies]
+leptos = { version = "0.8.23", features = ["csr"] }
+sherlock-game-core = { path = "../game-core" }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1"
+gloo-timers = "0.4.1"
+js-sys = "0.3"
