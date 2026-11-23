@@ -15,7 +15,7 @@ This is a repository inventory, not proof that every listed feature is currently
 ## User-facing domains to preserve
 
 1. Home, navigation, identity, and account/session restoration.
-2. Football Alias: room creation/join, teams, categories/cards, timer, scoring, results, replay, invites, and multiplayer reconnect.
+2. Football Alias: create/join rooms, teams, categories/cards, timer, scoring, results, replay, invites, and multiplayer reconnect.
 3. Player catalogue, collectible cards, profiles, portraits, career and season records.
 4. Clubs, squads, competitions, fixtures, results, tables, and match details.
 5. Ratings, statistics, player comparisons, and transfers.
@@ -59,11 +59,12 @@ Run format, lint, unit, integration, browser, security, migration, and load chec
 ### Gate F — admin migration
 After the primary user-facing product has passed its gates, migrate hidden admin/operations features with least-privilege authorization, audit logging, and destructive-action safeguards.
 
-## Current verified implementation in this repository
+## Current implementation in this repository
 
-- Rust workspace root.
-- Initial Axum API crate.
-- `GET /healthz` endpoint and a unit test for the health response.
-- GitHub Actions workflow for formatting, Clippy, and Cargo tests.
+- Rust workspace with Axum API, a pure Rust game-core crate, and a Leptos WebAssembly client.
+- `GET /healthz` endpoint in the API crate.
+- Local two-team Football Alias match flow: setup, category selection, timed rounds, correct/skip actions, score tracking, alternating teams, round summaries, and final result.
+- Bundled 2,145-card starter catalogue transformed from the legacy repository's `sherlock_cards.csv` (names and categories only).
+- Unit and integration tests cover scoring, skipping, timer expiry, team alternation, match completion, and bundled catalogue loading.
 
-No other legacy feature is claimed as migrated. CI results and compilation remain unverified until the workflow runs on GitHub.
+**Important limitations:** the current Alias mode is local to one device. Online rooms, multiplayer/realtime, server-authoritative scoring, Telegram identity, Supabase card reads, and persistent match history remain unimplemented. The Leptos client and WebAssembly target still require successful CI and browser runtime verification. No production feature parity is claimed.
