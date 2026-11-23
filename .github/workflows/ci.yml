@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: rust-ci-${{ github.ref }}
@@ -74,20 +74,3 @@ jobs:
           retention-days: 7
       - name: Release build
         run: cargo build --release --workspace
-
-      - name: Commit rustfmt output for the Dynasty feature branch
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feature/football-dynasty-offline-core'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          HEAD_REF: ${{ github.head_ref }}
-        run: |
-          set -euo pipefail
-          git add -- crates/dynasty-core/src/lib.rs crates/web/src/dynasty.rs
-          if git diff --cached --quiet; then
-            echo "Rust sources are already formatted."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "style: format Football Dynasty Rust source"
-          git push origin "HEAD:${HEAD_REF}"
