@@ -111,7 +111,7 @@ pub fn App() -> impl IntoView {
     };
 
     view! {
-        <main class="app-shell">
+        <main class="app-shell" class:dynasty-active=move || dynasty_mode.get()>
             <header class="topbar">
                 <a class="brand" href="/" aria-label="Sherlock">
                     <span class="brand-mark">"S"</span>
