@@ -1,6 +1,7 @@
 use leptos::prelude::*;
 use sherlock_dynasty_core::{Campaign, Formation, Position, TrainingFocus};
 
+#[cfg(target_arch = "wasm32")]
 const SAVE_KEY: &str = "sherlock.football-dynasty.v1";
 
 #[cfg(target_arch = "wasm32")]
@@ -132,14 +133,7 @@ pub fn DynastyApp() -> impl IntoView {
         }
     };
 
-    let upgrade_facility = move || {
-        if let Some(mut updated) = campaign.get() {
-            match updated.upgrade_training_facility() {
-                Ok(()) => save_and_set(updated, set_campaign, set_notice),
-                Err(error) => set_notice.set(Some(error.to_string())),
-            }
-        }
-    };
+
 
     let add_heir = move |_| {
         if let Some(mut updated) = campaign.get() {
@@ -484,7 +478,14 @@ pub fn DynastyApp() -> impl IntoView {
                                                 <button type="button" class="dynasty-secondary" on:click=train_team>"Провести тренировку · 8 000 €"</button>
                                                 <div class="dynasty-upgrade-row">
                                                     <span>{format!("Тренировочная база · уровень {}", active.club.training_facility)}</span>
-                                                    <button type="button" class="dynasty-mini-button" disabled=active.club.training_facility >= 5 on:click=move |_| upgrade_facility()>"Улучшить"</button>
+                                                    <button type="button" class="dynasty-mini-button" disabled=active.club.training_facility >= 5 on:click=move |_| {
+                                                                if let Some(mut updated) = campaign.get() {
+                                                                    match updated.upgrade_training_facility() {
+                                                                        Ok(()) => save_and_set(updated, set_campaign, set_notice),
+                                                                        Err(error) => set_notice.set(Some(error.to_string())),
+                                                                    }
+                                                                }
+                                                            }"Улучшить"</button>
                                                 </div>
                                             </section>
                                         </div>
