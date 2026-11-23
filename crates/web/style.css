@@ -188,3 +188,147 @@ h1, h2, p { margin-top: 0; }
   .answer-button { height: 60px; gap: 6px; font-size: 12px; }
   .footer { width: calc(100% - 32px); }
 }
+
+
+.mode-switch {
+  border: 1px solid rgba(199, 243, 107, .35);
+  border-radius: 999px;
+  background: rgba(199, 243, 107, .08);
+  color: #d8f5a4;
+  padding: 10px 15px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+.mode-switch:hover { background: rgba(199, 243, 107, .15); }
+.main-content.mode-hidden { display: none; }
+.dynasty-content { display: none; width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
+.dynasty-content.mode-visible { display: block; }
+.dynasty-shell { padding: 48px 0 56px; }
+.dynasty-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+.dynasty-kicker { color: #94aa9d; font-size: 9px; font-weight: 800; letter-spacing: .19em; }
+.dynasty-heading h1 { margin: 13px 0 9px; font: 700 clamp(34px, 5vw, 48px)/1.05 "Space Grotesk", sans-serif; letter-spacing: -.055em; }
+.dynasty-heading h1 span { color: #c7f36b; }
+.dynasty-heading p { margin: 0; color: #94a89d; font-size: 13px; line-height: 1.6; }
+.dynasty-season-badge { min-width: 82px; padding: 12px 16px; border: 1px solid rgba(199,243,107,.22); border-radius: 14px; background: rgba(199,243,107,.07); display: flex; flex-direction: column; gap: 2px; text-align: center; }
+.dynasty-season-badge span { color: #a6ba9e; font-size: 8px; font-weight: 800; letter-spacing: .16em; }
+.dynasty-season-badge strong { color: #d7f79b; font: 700 25px "Space Grotesk", sans-serif; }
+.dynasty-notice { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 18px; padding: 12px 15px; border: 1px solid rgba(199,243,107,.2); border-radius: 11px; background: rgba(199,243,107,.08); color: #d9efba; font-size: 12px; line-height: 1.5; }
+.dynasty-notice button { border: 0; background: transparent; color: #d9efba; font-size: 20px; }
+.dynasty-setup, .dynasty-panel { border: 1px solid rgba(219,231,213,.12); border-radius: 18px; background: rgba(12,28,39,.82); box-shadow: 0 20px 60px rgba(0,0,0,.14); }
+.dynasty-setup { max-width: 760px; margin: 0 auto; padding: 28px; }
+.dynasty-panel-title { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 25px; }
+.dynasty-panel-title > span { color: #c7f36b; font: 700 13px "Space Grotesk", sans-serif; padding-top: 4px; }
+.dynasty-panel-title h2 { margin: 0 0 6px; font: 700 20px "Space Grotesk", sans-serif; }
+.dynasty-panel-title p { margin: 0; color: #8da297; font-size: 12px; }
+.dynasty-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 15px; }
+.dynasty-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dynasty-field > span, .dynasty-inline-field > span { color: #91a69c; font-size: 8px; font-weight: 800; letter-spacing: .14em; }
+.dynasty-field input, .dynasty-field select, .dynasty-inline-field select {
+  width: 100%; min-width: 0; height: 44px; padding: 0 12px; border: 1px solid rgba(218,231,212,.14); border-radius: 10px; background: #102432; color: #f2f5ed; outline: none; font-size: 12px;
+}
+.dynasty-field input:focus, .dynasty-field select:focus, .dynasty-inline-field select:focus { border-color: #c7f36b; }
+.dynasty-start-summary { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; padding: 21px 0; margin-top: 23px; border-top: 1px solid rgba(218,231,212,.1); }
+.dynasty-start-summary > div { display: flex; flex-direction: column; gap: 5px; }
+.dynasty-start-summary strong { color: #edf3e5; font: 700 20px "Space Grotesk", sans-serif; }
+.dynasty-start-summary span { color: #82998d; font-size: 8px; font-weight: 800; letter-spacing: .08em; }
+.dynasty-primary, .dynasty-secondary {
+  width: 100%; min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 16px; border: 0; border-radius: 11px; font-size: 12px; font-weight: 800;
+}
+.dynasty-primary { margin-top: 12px; background: #c7f36b; color: #101d15; }
+.dynasty-primary:hover { background: #d5ff7f; }
+.dynasty-primary span { font-size: 19px; }
+.dynasty-secondary { margin-top: 13px; background: rgba(199,243,107,.1); border: 1px solid rgba(199,243,107,.23); color: #daf4a4; }
+.dynasty-secondary:hover { background: rgba(199,243,107,.16); }
+.dynasty-footnote, .dynasty-hint { color: #80968a; font-size: 11px; line-height: 1.65; }
+.dynasty-footnote { margin: 16px 0 0; text-align: center; }
+.dynasty-dashboard { display: flex; flex-direction: column; gap: 17px; }
+.dynasty-overview-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+.dynasty-stat-card { min-width: 0; padding: 17px 17px 15px; border: 1px solid rgba(219,231,213,.11); border-radius: 14px; background: rgba(12,28,39,.82); }
+.dynasty-stat-card > span { display: block; color: #8da398; font-size: 8px; font-weight: 800; letter-spacing: .13em; }
+.dynasty-stat-card strong { display: block; overflow-wrap: anywhere; margin-top: 10px; color: #eff4e9; font: 700 clamp(17px,2vw,23px) "Space Grotesk",sans-serif; }
+.dynasty-stat-card small { display: block; margin-top: 6px; color: #82988e; font-size: 9px; line-height: 1.5; }
+.dynasty-tabs { display: flex; flex-wrap: wrap; gap: 7px; padding: 6px; border: 1px solid rgba(219,231,213,.1); border-radius: 13px; background: rgba(10,25,36,.75); }
+.dynasty-tabs button { flex: 1 1 auto; min-height: 38px; padding: 0 15px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #91a69c; font-size: 11px; font-weight: 800; }
+.dynasty-tabs button.active { border-color: rgba(199,243,107,.18); background: rgba(199,243,107,.1); color: #d9f4a2; }
+.dynasty-panel { min-width: 0; padding: 21px; }
+.dynasty-two-col { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; gap: 14px; }
+.dynasty-column { display: flex; flex-direction: column; gap: 14px; }
+.dynasty-section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+.dynasty-section-heading > div > span { color: #c7f36b; font-size: 8px; font-weight: 800; letter-spacing: .16em; }
+.dynasty-section-heading h2 { margin: 5px 0 0; font: 700 19px "Space Grotesk",sans-serif; }
+.dynasty-inline-field { display: flex; flex-direction: column; gap: 5px; width: 105px; }
+.dynasty-inline-field select { height: 37px; }
+.dynasty-roster { display: flex; flex-direction: column; gap: 7px; }
+.dynasty-player-row { display: flex; align-items: center; gap: 11px; min-width: 0; padding: 10px; border: 1px solid rgba(219,231,213,.08); border-radius: 11px; background: rgba(6,19,29,.55); }
+.dynasty-player-rating { flex: 0 0 39px; height: 39px; display: grid; place-items: center; border-radius: 9px; background: rgba(199,243,107,.1); color: #d7f598; font: 700 17px "Space Grotesk",sans-serif; }
+.dynasty-player-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.dynasty-player-main strong { overflow: hidden; color: #e7eee2; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.dynasty-player-main span, .dynasty-player-career span { color: #80968b; font-size: 9px; }
+.dynasty-player-career { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.dynasty-player-career strong { color: #c6d3c6; font-size: 10px; }
+.dynasty-mini-button { flex: 0 0 auto; min-height: 31px; padding: 0 10px; border: 1px solid rgba(199,243,107,.23); border-radius: 8px; background: rgba(199,243,107,.08); color: #d6efaa; font-size: 9px; font-weight: 800; }
+.dynasty-mini-button:disabled { border-color: rgba(219,231,213,.08); background: rgba(219,231,213,.04); color: #71847a; cursor: default; }
+.dynasty-table-wrap { width: 100%; overflow-x: auto; }
+.dynasty-table { width: 100%; border-collapse: collapse; font-size: 10px; white-space: nowrap; }
+.dynasty-table th { padding: 9px 7px; color: #80968b; font-size: 8px; letter-spacing: .08em; text-align: left; }
+.dynasty-table td { padding: 11px 7px; border-top: 1px solid rgba(219,231,213,.07); color: #b8c7b9; }
+.dynasty-table td strong { color: #d7f59c; }
+.dynasty-table .dynasty-own-row td { color: #e4f2d1; background: rgba(199,243,107,.055); }
+.dynasty-fixtures { display: flex; flex-direction: column; gap: 9px; }
+.dynasty-fixture { display: grid; grid-template-columns: minmax(0,1fr) 68px minmax(0,1fr); align-items: center; gap: 7px; padding: 12px 10px; border-radius: 10px; background: rgba(6,19,29,.6); color: #b8c7ba; font-size: 10px; }
+.dynasty-fixture span:first-child { text-align: right; }
+.dynasty-fixture span:last-child { text-align: left; }
+.dynasty-fixture strong { color: #d9edb8; font: 700 13px "Space Grotesk",sans-serif; text-align: center; }
+.dynasty-ledger { display: flex; flex-direction: column; gap: 0; }
+.dynasty-ledger-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 11px 0; border-bottom: 1px solid rgba(219,231,213,.07); color: #a9b9ac; font-size: 10px; }
+.dynasty-ledger-row:last-child { border-bottom: 0; }
+.dynasty-ledger-row strong { flex: 0 0 auto; color: #d6f59c; font-size: 10px; }
+.dynasty-ledger-row strong.negative { color: #e6a69a; }
+.dynasty-upgrade-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 13px; padding-top: 13px; border-top: 1px solid rgba(219,231,213,.08); color: #a9baad; font-size: 10px; }
+.dynasty-family-card { display: flex; align-items: center; justify-content: space-between; padding: 17px; border: 1px solid rgba(199,243,107,.18); border-radius: 12px; background: rgba(199,243,107,.06); }
+.dynasty-family-card > div:first-child { display: flex; flex-direction: column; gap: 5px; }
+.dynasty-family-card span { color: #9aae91; font-size: 8px; font-weight: 800; letter-spacing: .14em; }
+.dynasty-family-card strong { color: #e7f3d9; font: 700 21px "Space Grotesk",sans-serif; }
+.dynasty-family-card small { color: #92a88e; font-size: 10px; }
+.dynasty-family-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #c7f36b; color: #112018; font: 700 21px "Space Grotesk",sans-serif; }
+.dynasty-heirs { display: flex; flex-direction: column; gap: 8px; margin-top: 13px; }
+.dynasty-heir-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; background: rgba(6,19,29,.6); }
+.dynasty-heir-row > div { display: flex; flex-direction: column; gap: 4px; }
+.dynasty-heir-row strong { color: #e1eade; font-size: 11px; }
+.dynasty-heir-row span { color: #82988e; font-size: 9px; }
+.dynasty-heir-form { margin-top: 17px; }
+.dynasty-events { display: flex; flex-direction: column; gap: 12px; }
+.dynasty-events article { padding: 0 0 11px 13px; border-left: 2px solid rgba(199,243,107,.38); border-bottom: 1px solid rgba(219,231,213,.07); }
+.dynasty-events article > span { color: #c7f36b; font-size: 8px; font-weight: 800; letter-spacing: .12em; }
+.dynasty-events article strong { display: block; margin-top: 5px; color: #e2ecde; font-size: 11px; }
+.dynasty-events article p { margin: 5px 0 0; color: #91a69a; font-size: 10px; line-height: 1.6; }
+.dynasty-bottom-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 17px; color: #6f8579; font-size: 9px; }
+.dynasty-bottom-actions button { border: 0; background: transparent; color: #9baca0; font-size: 9px; text-decoration: underline; }
+
+@media (max-width: 760px) {
+  .dynasty-overview-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .dynasty-two-col { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .topbar { gap: 8px; }
+  .mode-switch { padding: 9px 10px; font-size: 9px; }
+  .dynasty-content { width: calc(100% - 32px); }
+  .dynasty-shell { padding: 33px 0 40px; }
+  .dynasty-heading { align-items: flex-start; }
+  .dynasty-heading h1 { font-size: 34px; }
+  .dynasty-season-badge { min-width: 63px; padding: 9px 11px; }
+  .dynasty-setup, .dynasty-panel { padding: 17px 14px; border-radius: 14px; }
+  .dynasty-form-grid { grid-template-columns: 1fr; }
+  .dynasty-start-summary { grid-template-columns: repeat(2,1fr); gap: 14px; }
+  .dynasty-overview-grid { gap: 8px; }
+  .dynasty-stat-card { padding: 12px; }
+  .dynasty-stat-card strong { font-size: 16px; }
+  .dynasty-tabs { gap: 3px; }
+  .dynasty-tabs button { padding: 0 8px; min-height: 34px; font-size: 9px; }
+  .dynasty-player-row { flex-wrap: wrap; gap: 8px; }
+  .dynasty-player-main { min-width: calc(100% - 60px); }
+  .dynasty-player-career { margin-left: 47px; }
+  .dynasty-fixture { grid-template-columns: minmax(0,1fr) 56px minmax(0,1fr); font-size: 9px; }
+  .dynasty-bottom-actions { align-items: flex-start; flex-direction: column; }
+}
