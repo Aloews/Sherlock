@@ -259,7 +259,9 @@ impl std::fmt::Display for DynastyError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::InvalidName(field) => write!(f, "Некорректное значение: {field}"),
-            Self::InvalidAdvanceDays(days) => write!(f, "Нельзя продвинуть календарь на {days} дней"),
+            Self::InvalidAdvanceDays(days) => {
+                write!(f, "Нельзя продвинуть календарь на {days} дней")
+            }
             Self::CampaignNotActive => write!(f, "Кампания ожидает решения по наследованию"),
             Self::EventNotFound => write!(f, "Событие не найдено"),
             Self::EventExpired => write!(f, "Срок решения по событию истёк"),
@@ -282,7 +284,8 @@ impl Campaign {
         validate_name(&setup.club_name, 64, "название клуба")?;
 
         let start_date = NaiveDate::from_ymd_opt(2026, 1, 1).expect("valid campaign epoch");
-        let founder_birth_date = NaiveDate::from_ymd_opt(1986, 1, 1).expect("valid founder birth date");
+        let founder_birth_date =
+            NaiveDate::from_ymd_opt(1986, 1, 1).expect("valid founder birth date");
         let founder_id = 1;
         let dynasty_id = 2;
         let club_id = 3;
@@ -377,21 +380,40 @@ impl Campaign {
             "campaign-opening",
             "Начальный капитал кампании",
             vec![
-                LedgerLine { account: FOUNDER_CASH_ACCOUNT.to_owned(), side: "debit".to_owned(), amount_minor: 2_500_000_000 },
-                LedgerLine { account: CLUB_CASH_ACCOUNT.to_owned(), side: "debit".to_owned(), amount_minor: 1_000_000_000 },
-                LedgerLine { account: OPENING_CAPITAL_ACCOUNT.to_owned(), side: "credit".to_owned(), amount_minor: 3_500_000_000 },
+                LedgerLine {
+                    account: FOUNDER_CASH_ACCOUNT.to_owned(),
+                    side: "debit".to_owned(),
+                    amount_minor: 2_500_000_000,
+                },
+                LedgerLine {
+                    account: CLUB_CASH_ACCOUNT.to_owned(),
+                    side: "debit".to_owned(),
+                    amount_minor: 1_000_000_000,
+                },
+                LedgerLine {
+                    account: OPENING_CAPITAL_ACCOUNT.to_owned(),
+                    side: "credit".to_owned(),
+                    amount_minor: 3_500_000_000,
+                },
             ],
         )?;
 
         let fixtures_start = next_saturday(start_date);
-        campaign.fixtures = generate_schedule(&campaign.clubs, fixtures_start, start_date.year(), &mut campaign.next_id);
+        campaign.fixtures = generate_schedule(
+            &campaign.clubs,
+            fixtures_start,
+            start_date.year(),
+            &mut campaign.next_id,
+        );
         let founder_name = campaign.characters[0].full_name.clone();
         let dynasty_name = campaign.dynasty.name.clone();
         let club_name = campaign.controlled_club().name.clone();
         campaign.push_chronicle(
             "campaign_founded",
             "Начало футбольной династии",
-            format!("{founder_name} начинает путь семьи «{dynasty_name}» во главе клуба «{club_name}»."),
+            format!(
+                "{founder_name} начинает путь семьи «{dynasty_name}» во главе клуба «{club_name}»."
+            ),
         );
 
         campaign.push_event(
@@ -422,7 +444,11 @@ impl Campaign {
             "Руководители клуба предлагают определить главный ориентир на ближайший месяц.",
             80,
             vec![
-                choice("reputation", "Сосредоточиться на спортивном развитии", "club_reputation"),
+                choice(
+                    "reputation",
+                    "Сосредоточиться на спортивном развитии",
+                    "club_reputation",
+                ),
                 choice("prestige", "Укрепить влияние семьи", "dynasty_prestige"),
             ],
             14,
@@ -439,7 +465,9 @@ impl Campaign {
     }
 
     pub fn current_character(&self) -> Option<&Character> {
-        self.characters.iter().find(|character| character.id == self.player_character_id)
+        self.characters
+            .iter()
+            .find(|character| character.id == self.player_character_id)
     }
 
     pub fn cash_balance(&self, account: &str) -> i64 {
@@ -447,7 +475,13 @@ impl Campaign {
             .iter()
             .flat_map(|entry| entry.lines.iter())
             .filter(|line| line.account == account)
-            .map(|line| if line.side == "debit" { line.amount_minor } else { -line.amount_minor })
+            .map(|line| {
+                if line.side == "debit" {
+                    line.amount_minor
+                } else {
+                    -line.amount_minor
+                }
+            })
             .sum()
     }
 
@@ -480,16 +514,29 @@ impl Campaign {
             return Err(DynastyError::CampaignNotActive);
         }
         validate_name(name, 80, "имя наследника")?;
-        if age > 70 || self.characters.iter().any(|c| c.full_name.eq_ignore_ascii_case(name.trim())) {
+        if age > 70
+            || self
+                .characters
+                .iter()
+                .any(|c| c.full_name.eq_ignore_ascii_case(name.trim()))
+        {
             return Err(DynastyError::InvalidHeir);
         }
         let id = self.allocate_id();
         let parent = self.player_character_id;
-        let founder_origin = self.current_character().map(|character| character.origin).unwrap_or(Origin::Newcomer);
+        let founder_origin = self
+            .current_character()
+            .map(|character| character.origin)
+            .unwrap_or(Origin::Newcomer);
         let birth_year = self.game_date.year() - i32::from(age);
-        let birth_date = self.game_date
+        let birth_date = self
+            .game_date
             .with_year(birth_year)
-            .or_else(|| self.game_date.with_day(28).and_then(|date| date.with_year(birth_year)))
+            .or_else(|| {
+                self.game_date
+                    .with_day(28)
+                    .and_then(|date| date.with_year(birth_year))
+            })
             .ok_or(DynastyError::InvalidHeir)?;
         self.characters.push(Character {
             id,
@@ -509,13 +556,21 @@ impl Campaign {
         self.push_chronicle(
             "heir_designated",
             "Новый наследник семьи",
-            format!("{} включён в линию наследования семьи «{}».", name.trim(), self.dynasty.name),
+            format!(
+                "{} включён в линию наследования семьи «{}».",
+                name.trim(),
+                self.dynasty.name
+            ),
         );
         Ok(id)
     }
 
     pub fn resolve_event(&mut self, event_id: u64, choice_id: &str) -> Result<(), DynastyError> {
-        let index = self.events.iter().position(|event| event.id == event_id).ok_or(DynastyError::EventNotFound)?;
+        let index = self
+            .events
+            .iter()
+            .position(|event| event.id == event_id)
+            .ok_or(DynastyError::EventNotFound)?;
         if self.events[index].status != EventStatus::Pending {
             return Err(DynastyError::EventExpired);
         }
@@ -523,11 +578,20 @@ impl Campaign {
             self.events[index].status = EventStatus::Expired;
             return Err(DynastyError::EventExpired);
         }
-        let selected = self.events[index].choices.iter().find(|choice| choice.id == choice_id).cloned().ok_or(DynastyError::InvalidChoice)?;
+        let selected = self.events[index]
+            .choices
+            .iter()
+            .find(|choice| choice.id == choice_id)
+            .cloned()
+            .ok_or(DynastyError::InvalidChoice)?;
 
         match selected.effect.as_str() {
             "club_reputation" => {
-                let club = self.clubs.iter_mut().find(|club| club.id == self.controlled_club_id).ok_or(DynastyError::InvalidChoice)?;
+                let club = self
+                    .clubs
+                    .iter_mut()
+                    .find(|club| club.id == self.controlled_club_id)
+                    .ok_or(DynastyError::InvalidChoice)?;
                 club.reputation = (club.reputation + 5).clamp(0, 100);
             }
             "dynasty_prestige" => self.dynasty.prestige = (self.dynasty.prestige + 5).clamp(0, 100),
@@ -536,8 +600,16 @@ impl Campaign {
                     &format!("event-{}-sponsor", event_id),
                     "Спонсорский контракт",
                     vec![
-                        LedgerLine { account: CLUB_CASH_ACCOUNT.to_owned(), side: "debit".to_owned(), amount_minor: 25_000_000 },
-                        LedgerLine { account: SPONSOR_REVENUE_ACCOUNT.to_owned(), side: "credit".to_owned(), amount_minor: 25_000_000 },
+                        LedgerLine {
+                            account: CLUB_CASH_ACCOUNT.to_owned(),
+                            side: "debit".to_owned(),
+                            amount_minor: 25_000_000,
+                        },
+                        LedgerLine {
+                            account: SPONSOR_REVENUE_ACCOUNT.to_owned(),
+                            side: "credit".to_owned(),
+                            amount_minor: 25_000_000,
+                        },
                     ],
                 )?;
             }
@@ -571,18 +643,30 @@ impl Campaign {
         if self.status != CampaignStatus::SuccessionPending {
             return Err(DynastyError::SuccessionNotReady);
         }
-        let heir = self.characters.iter().find(|character| {
-            character.id == heir_id
-                && character.is_heir
-                && character.life_status == CharacterStatus::Alive
-                && character.age_on(self.game_date) >= 18
-        }).ok_or(DynastyError::InvalidHeir)?;
+        let heir = self
+            .characters
+            .iter()
+            .find(|character| {
+                character.id == heir_id
+                    && character.is_heir
+                    && character.life_status == CharacterStatus::Alive
+                    && character.age_on(self.game_date) >= 18
+            })
+            .ok_or(DynastyError::InvalidHeir)?;
 
-        let old_head_name = self.characters.iter().find(|c| c.id == self.dynasty.head_character_id)
-            .map(|c| c.full_name.clone()).unwrap_or_default();
+        let old_head_name = self
+            .characters
+            .iter()
+            .find(|c| c.id == self.dynasty.head_character_id)
+            .map(|c| c.full_name.clone())
+            .unwrap_or_default();
         let new_head_name = heir.full_name.clone();
         self.player_character_id = heir_id;
-        if let Some(character) = self.characters.iter_mut().find(|character| character.id == heir_id) {
+        if let Some(character) = self
+            .characters
+            .iter_mut()
+            .find(|character| character.id == heir_id)
+        {
             character.is_heir = false;
         }
         self.dynasty.head_character_id = heir_id;
@@ -591,7 +675,10 @@ impl Campaign {
         self.push_chronicle(
             "succession_completed",
             "Наследник возглавил династию",
-            format!("После ухода {} главой семьи стал {}.", old_head_name, new_head_name),
+            format!(
+                "После ухода {} главой семьи стал {}.",
+                old_head_name, new_head_name
+            ),
         );
         Ok(())
     }
@@ -599,23 +686,35 @@ impl Campaign {
     pub fn standings(&self) -> Vec<Standing> {
         let mut rows = BTreeMap::<u64, Standing>::new();
         for club in &self.clubs {
-            rows.insert(club.id, Standing {
-                team_id: club.id,
-                team_name: club.name.clone(),
-                played: 0,
-                wins: 0,
-                draws: 0,
-                losses: 0,
-                goals_for: 0,
-                goals_against: 0,
-                points: 0,
-            });
+            rows.insert(
+                club.id,
+                Standing {
+                    team_id: club.id,
+                    team_name: club.name.clone(),
+                    played: 0,
+                    wins: 0,
+                    draws: 0,
+                    losses: 0,
+                    goals_for: 0,
+                    goals_against: 0,
+                    points: 0,
+                },
+            );
         }
 
-        for fixture in self.fixtures.iter().filter(|fixture| fixture.status == FixtureStatus::Played) {
-            let (Some(home_goals), Some(away_goals)) = (fixture.home_goals, fixture.away_goals) else { continue };
+        for fixture in self
+            .fixtures
+            .iter()
+            .filter(|fixture| fixture.status == FixtureStatus::Played)
+        {
+            let (Some(home_goals), Some(away_goals)) = (fixture.home_goals, fixture.away_goals)
+            else {
+                continue;
+            };
             {
-                let Some(home) = rows.get_mut(&fixture.home_team_id) else { continue };
+                let Some(home) = rows.get_mut(&fixture.home_team_id) else {
+                    continue;
+                };
                 home.played += 1;
                 home.goals_for += i32::from(home_goals);
                 home.goals_against += i32::from(away_goals);
@@ -632,7 +731,9 @@ impl Campaign {
                 }
             }
             {
-                let Some(away) = rows.get_mut(&fixture.away_team_id) else { continue };
+                let Some(away) = rows.get_mut(&fixture.away_team_id) else {
+                    continue;
+                };
                 away.played += 1;
                 away.goals_for += i32::from(away_goals);
                 away.goals_against += i32::from(home_goals);
@@ -652,7 +753,8 @@ impl Campaign {
 
         let mut standings: Vec<_> = rows.into_values().collect();
         standings.sort_by(|a, b| {
-            b.points.cmp(&a.points)
+            b.points
+                .cmp(&a.points)
                 .then_with(|| b.goal_difference().cmp(&a.goal_difference()))
                 .then_with(|| b.goals_for.cmp(&a.goals_for))
                 .then_with(|| a.team_name.cmp(&b.team_name))
@@ -662,7 +764,11 @@ impl Campaign {
 
     fn check_founder_lifecycle(&mut self) {
         let head_id = self.player_character_id;
-        let Some(index) = self.characters.iter().position(|character| character.id == head_id) else {
+        let Some(index) = self
+            .characters
+            .iter()
+            .position(|character| character.id == head_id)
+        else {
             return;
         };
         if self.characters[index].life_status == CharacterStatus::Alive
@@ -690,23 +796,47 @@ impl Campaign {
     }
 
     fn resolve_due_fixtures(&mut self) {
-        let due_ids: Vec<u64> = self.fixtures.iter()
-            .filter(|fixture| fixture.status == FixtureStatus::Scheduled && fixture.match_date <= self.game_date)
+        let due_ids: Vec<u64> = self
+            .fixtures
+            .iter()
+            .filter(|fixture| {
+                fixture.status == FixtureStatus::Scheduled && fixture.match_date <= self.game_date
+            })
             .map(|fixture| fixture.id)
             .collect();
         for fixture_id in due_ids {
-            let Some(index) = self.fixtures.iter().position(|fixture| fixture.id == fixture_id) else { continue };
+            let Some(index) = self
+                .fixtures
+                .iter()
+                .position(|fixture| fixture.id == fixture_id)
+            else {
+                continue;
+            };
             let fixture = self.fixtures[index].clone();
-            let Some((home_name, home_attack, home_defence)) = self.clubs.iter()
+            let Some((home_name, home_attack, home_defence)) = self
+                .clubs
+                .iter()
                 .find(|club| club.id == fixture.home_team_id)
-                .map(|club| (club.name.clone(), club.attack, club.defence)) else { continue };
-            let Some((away_name, away_attack, away_defence)) = self.clubs.iter()
+                .map(|club| (club.name.clone(), club.attack, club.defence))
+            else {
+                continue;
+            };
+            let Some((away_name, away_attack, away_defence)) = self
+                .clubs
+                .iter()
                 .find(|club| club.id == fixture.away_team_id)
-                .map(|club| (club.name.clone(), club.attack, club.defence)) else { continue };
+                .map(|club| (club.name.clone(), club.attack, club.defence))
+            else {
+                continue;
+            };
             let home_strength = home_attack - away_defence;
             let away_strength = away_attack - home_defence;
-            let home_roll = mix64(self.seed ^ fixture.id.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ fixture.home_team_id);
-            let away_roll = mix64(self.seed ^ fixture.id.wrapping_mul(0xD1B5_4A32_D192_ED03) ^ fixture.away_team_id);
+            let home_roll = mix64(
+                self.seed ^ fixture.id.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ fixture.home_team_id,
+            );
+            let away_roll = mix64(
+                self.seed ^ fixture.id.wrapping_mul(0xD1B5_4A32_D192_ED03) ^ fixture.away_team_id,
+            );
             let home_goals = ((home_roll % 4) as i32 + home_strength / 30 + 1).clamp(0, 5) as u8;
             let away_goals = ((away_roll % 4) as i32 + away_strength / 30).clamp(0, 5) as u8;
             self.fixtures[index].status = FixtureStatus::Played;
@@ -715,7 +845,10 @@ impl Campaign {
             self.push_chronicle(
                 "fixture_completed",
                 "Матч завершён",
-                format!("{} {}:{} {} · игровой день {}", home_name, home_goals, away_goals, away_name, fixture.matchday),
+                format!(
+                    "{} {}:{} {} · игровой день {}",
+                    home_name, home_goals, away_goals, away_name, fixture.matchday
+                ),
             );
         }
     }
@@ -736,8 +869,16 @@ impl Campaign {
                 "Еженедельное заседание совета",
                 "Руководство клуба оценивает результаты и предлагает определить главный приоритет недели.",
                 vec![
-                    choice("reputation", "Инвестировать внимание в спортивную репутацию", "club_reputation"),
-                    choice("prestige", "Укрепить позиции и авторитет семьи", "dynasty_prestige"),
+                    choice(
+                        "reputation",
+                        "Инвестировать внимание в спортивную репутацию",
+                        "club_reputation",
+                    ),
+                    choice(
+                        "prestige",
+                        "Укрепить позиции и авторитет семьи",
+                        "dynasty_prestige",
+                    ),
                 ],
             ),
             2 => (
@@ -746,7 +887,11 @@ impl Campaign {
                 "Региональная компания готова заключить контракт с клубом на текущий сезон.",
                 vec![
                     choice("accept", "Принять контракт на €250 000", "sponsor_offer"),
-                    choice("decline", "Отказаться и сохранить независимость", "dynasty_prestige"),
+                    choice(
+                        "decline",
+                        "Отказаться и сохранить независимость",
+                        "dynasty_prestige",
+                    ),
                 ],
             ),
             3 => (
@@ -754,8 +899,16 @@ impl Campaign {
                 "Встреча с болельщиками",
                 "Представители трибун хотят обсудить развитие стадиона и отношения с клубом.",
                 vec![
-                    choice("community", "Поддержать программу для болельщиков", "club_reputation"),
-                    choice("legacy", "Создать семейный фонд истории клуба", "dynasty_prestige"),
+                    choice(
+                        "community",
+                        "Поддержать программу для болельщиков",
+                        "club_reputation",
+                    ),
+                    choice(
+                        "legacy",
+                        "Создать семейный фонд истории клуба",
+                        "dynasty_prestige",
+                    ),
                 ],
             ),
             _ => (
@@ -771,7 +924,15 @@ impl Campaign {
         self.push_event(event_type, title, body, 75, choices, 7);
     }
 
-    fn push_event(&mut self, event_type: &str, title: &str, body: &str, priority: u8, choices: Vec<EventChoice>, lifetime_days: i64) {
+    fn push_event(
+        &mut self,
+        event_type: &str,
+        title: &str,
+        body: &str,
+        priority: u8,
+        choices: Vec<EventChoice>,
+        lifetime_days: i64,
+    ) {
         let id = self.allocate_id();
         self.events.push(GameEvent {
             id,
@@ -798,13 +959,31 @@ impl Campaign {
         });
     }
 
-    fn post_journal(&mut self, key: &str, memo: &str, lines: Vec<LedgerLine>) -> Result<(), DynastyError> {
+    fn post_journal(
+        &mut self,
+        key: &str,
+        memo: &str,
+        lines: Vec<LedgerLine>,
+    ) -> Result<(), DynastyError> {
         if self.ledger.iter().any(|entry| entry.idempotency_key == key) {
             return Err(DynastyError::DuplicateTransaction);
         }
-        let debits: i64 = lines.iter().filter(|line| line.side == "debit").map(|line| line.amount_minor).sum();
-        let credits: i64 = lines.iter().filter(|line| line.side == "credit").map(|line| line.amount_minor).sum();
-        if debits <= 0 || debits != credits || lines.iter().any(|line| line.amount_minor <= 0 || !matches!(line.side.as_str(), "debit" | "credit")) {
+        let debits: i64 = lines
+            .iter()
+            .filter(|line| line.side == "debit")
+            .map(|line| line.amount_minor)
+            .sum();
+        let credits: i64 = lines
+            .iter()
+            .filter(|line| line.side == "credit")
+            .map(|line| line.amount_minor)
+            .sum();
+        if debits <= 0
+            || debits != credits
+            || lines.iter().any(|line| {
+                line.amount_minor <= 0 || !matches!(line.side.as_str(), "debit" | "credit")
+            })
+        {
             return Err(DynastyError::JournalUnbalanced);
         }
         let id = self.allocate_id();
@@ -836,7 +1015,11 @@ fn validate_name(value: &str, max_chars: usize, field: &'static str) -> Result<(
 }
 
 fn choice(id: &str, label: &str, effect: &str) -> EventChoice {
-    EventChoice { id: id.to_owned(), label: label.to_owned(), effect: effect.to_owned() }
+    EventChoice {
+        id: id.to_owned(),
+        label: label.to_owned(),
+        effect: effect.to_owned(),
+    }
 }
 
 fn origin_skill(origin: Origin, skill: usize) -> u8 {
@@ -856,7 +1039,12 @@ fn next_saturday(date: NaiveDate) -> NaiveDate {
     date + Duration::days(days)
 }
 
-fn generate_schedule(clubs: &[Club], first_date: NaiveDate, season_year: i32, next_id: &mut u64) -> Vec<Fixture> {
+fn generate_schedule(
+    clubs: &[Club],
+    first_date: NaiveDate,
+    season_year: i32,
+    next_id: &mut u64,
+) -> Vec<Fixture> {
     let mut rotation: Vec<Option<u64>> = clubs.iter().map(|club| Some(club.id)).collect();
     if rotation.len() % 2 == 1 {
         rotation.push(None);
@@ -869,7 +1057,11 @@ fn generate_schedule(clubs: &[Club], first_date: NaiveDate, season_year: i32, ne
             let left = rotation[pair];
             let right = rotation[rotation.len() - 1 - pair];
             if let (Some(a), Some(b)) = (left, right) {
-                let (home, away) = if (round + pair) % 2 == 0 { (a, b) } else { (b, a) };
+                let (home, away) = if (round + pair) % 2 == 0 {
+                    (a, b)
+                } else {
+                    (b, a)
+                };
                 first_leg.push(Fixture {
                     id: *next_id,
                     season_year,
@@ -938,12 +1130,28 @@ mod tests {
         let campaign = campaign();
         assert_eq!(campaign.clubs.len(), 4);
         assert_eq!(campaign.fixtures.len(), 12);
-        assert_eq!(campaign.current_character().unwrap().age_on(campaign.game_date), 40);
+        assert_eq!(
+            campaign
+                .current_character()
+                .unwrap()
+                .age_on(campaign.game_date),
+            40
+        );
         assert_eq!(campaign.cash_balance(FOUNDER_CASH_ACCOUNT), 2_500_000_000);
         assert_eq!(campaign.cash_balance(CLUB_CASH_ACCOUNT), 1_000_000_000);
         let opening = &campaign.ledger[0];
-        let debit: i64 = opening.lines.iter().filter(|l| l.side == "debit").map(|l| l.amount_minor).sum();
-        let credit: i64 = opening.lines.iter().filter(|l| l.side == "credit").map(|l| l.amount_minor).sum();
+        let debit: i64 = opening
+            .lines
+            .iter()
+            .filter(|l| l.side == "debit")
+            .map(|l| l.amount_minor)
+            .sum();
+        let credit: i64 = opening
+            .lines
+            .iter()
+            .filter(|l| l.side == "credit")
+            .map(|l| l.amount_minor)
+            .sum();
         assert_eq!(debit, credit);
     }
 
@@ -954,20 +1162,42 @@ mod tests {
         first.advance_days(31).unwrap();
         second.advance_days(31).unwrap();
         assert_eq!(first.fixtures, second.fixtures);
-        let played = first.fixtures.iter().filter(|fixture| fixture.status == FixtureStatus::Played).count();
+        let played = first
+            .fixtures
+            .iter()
+            .filter(|fixture| fixture.status == FixtureStatus::Played)
+            .count();
         assert_eq!(played, 10);
         let standings = first.standings();
-        assert_eq!(standings.iter().map(|row| row.played as usize).sum::<usize>(), played * 2);
-        assert_eq!(standings.iter().map(|row| row.points).sum::<u16>(),
-            standings.iter().map(|row| (row.wins * 3) + row.draws).sum::<u16>());
+        assert_eq!(
+            standings
+                .iter()
+                .map(|row| row.played as usize)
+                .sum::<usize>(),
+            played * 2
+        );
+        assert_eq!(
+            standings.iter().map(|row| row.points).sum::<u16>(),
+            standings
+                .iter()
+                .map(|row| (row.wins * 3) + row.draws)
+                .sum::<u16>()
+        );
     }
 
     #[test]
     fn one_team_plays_no_more_than_once_per_matchday() {
         let campaign = campaign();
         for matchday in 1..=6 {
-            let fixtures: Vec<_> = campaign.fixtures.iter().filter(|fixture| fixture.matchday == matchday).collect();
-            let participants: Vec<_> = fixtures.iter().flat_map(|fixture| [fixture.home_team_id, fixture.away_team_id]).collect();
+            let fixtures: Vec<_> = campaign
+                .fixtures
+                .iter()
+                .filter(|fixture| fixture.matchday == matchday)
+                .collect();
+            let participants: Vec<_> = fixtures
+                .iter()
+                .flat_map(|fixture| [fixture.home_team_id, fixture.away_team_id])
+                .collect();
             let mut unique = participants.clone();
             unique.sort_unstable();
             unique.dedup();
@@ -983,8 +1213,16 @@ mod tests {
         campaign.resolve_event(event.id, "reputation").unwrap();
         assert_eq!(campaign.controlled_club().reputation, 40);
         assert_eq!(campaign.events[0].status, EventStatus::Resolved);
-        assert!(campaign.chronicle.iter().any(|entry| entry.event_type == "event_resolved"));
-        assert_eq!(campaign.resolve_event(event.id, "reputation"), Err(DynastyError::EventExpired));
+        assert!(
+            campaign
+                .chronicle
+                .iter()
+                .any(|entry| entry.event_type == "event_resolved")
+        );
+        assert_eq!(
+            campaign.resolve_event(event.id, "reputation"),
+            Err(DynastyError::EventExpired)
+        );
     }
 
     #[test]
@@ -993,11 +1231,24 @@ mod tests {
         let event_id = campaign.push_event_for_test();
         let before = campaign.cash_balance(CLUB_CASH_ACCOUNT);
         campaign.resolve_event(event_id, "accept").unwrap();
-        assert_eq!(campaign.cash_balance(CLUB_CASH_ACCOUNT), before + 25_000_000);
+        assert_eq!(
+            campaign.cash_balance(CLUB_CASH_ACCOUNT),
+            before + 25_000_000
+        );
         assert_eq!(campaign.ledger.len(), 2);
         let entry = campaign.ledger.last().unwrap();
-        let debit: i64 = entry.lines.iter().filter(|line| line.side == "debit").map(|line| line.amount_minor).sum();
-        let credit: i64 = entry.lines.iter().filter(|line| line.side == "credit").map(|line| line.amount_minor).sum();
+        let debit: i64 = entry
+            .lines
+            .iter()
+            .filter(|line| line.side == "debit")
+            .map(|line| line.amount_minor)
+            .sum();
+        let credit: i64 = entry
+            .lines
+            .iter()
+            .filter(|line| line.side == "credit")
+            .map(|line| line.amount_minor)
+            .sum();
         assert_eq!(debit, credit);
     }
 
@@ -1006,8 +1257,15 @@ mod tests {
         let mut campaign = campaign();
         let heir_id = campaign.add_heir("Мария Орлова", 12).unwrap();
         assert_eq!(campaign.succession_candidates().len(), 0);
-        let heir = campaign.characters.iter().find(|character| character.id == heir_id).unwrap();
-        assert_eq!(heir.parent_character_id, Some(campaign.founder_character_id));
+        let heir = campaign
+            .characters
+            .iter()
+            .find(|character| character.id == heir_id)
+            .unwrap();
+        assert_eq!(
+            heir.parent_character_id,
+            Some(campaign.founder_character_id)
+        );
         assert_eq!(heir.age_on(campaign.game_date), 12);
     }
 
@@ -1015,12 +1273,28 @@ mod tests {
     fn founder_death_and_succession_transfer_campaign_control_once() {
         let mut campaign = campaign();
         let heir_id = campaign.add_heir("Мария Орлова", 25).unwrap();
-        let founder_index = campaign.characters.iter().position(|c| c.id == campaign.founder_character_id).unwrap();
+        let founder_index = campaign
+            .characters
+            .iter()
+            .position(|c| c.id == campaign.founder_character_id)
+            .unwrap();
         let founder_birth = campaign.characters[founder_index].birth_date;
-        campaign.game_date = NaiveDate::from_ymd_opt(founder_birth.year() + 90, founder_birth.month(), founder_birth.day()).unwrap();
+        campaign.game_date = NaiveDate::from_ymd_opt(
+            founder_birth.year() + 90,
+            founder_birth.month(),
+            founder_birth.day(),
+        )
+        .unwrap();
         campaign.advance_days(1).unwrap();
         assert_eq!(campaign.status, CampaignStatus::SuccessionPending);
-        assert_eq!(campaign.succession_candidates().iter().map(|c| c.id).collect::<Vec<_>>(), vec![heir_id]);
+        assert_eq!(
+            campaign
+                .succession_candidates()
+                .iter()
+                .map(|c| c.id)
+                .collect::<Vec<_>>(),
+            vec![heir_id]
+        );
         campaign.execute_succession(heir_id).unwrap();
         assert_eq!(campaign.player_character_id, heir_id);
         assert_eq!(campaign.dynasty.head_character_id, heir_id);
@@ -1031,18 +1305,43 @@ mod tests {
     fn succession_can_continue_across_more_than_one_generation() {
         let mut campaign = campaign();
         let first_heir = campaign.add_heir("Мария Орлова", 25).unwrap();
-        let first_birth = campaign.characters.iter().find(|character| character.id == campaign.founder_character_id).unwrap().birth_date;
-        campaign.game_date = NaiveDate::from_ymd_opt(first_birth.year() + 90, first_birth.month(), first_birth.day()).unwrap();
+        let first_birth = campaign
+            .characters
+            .iter()
+            .find(|character| character.id == campaign.founder_character_id)
+            .unwrap()
+            .birth_date;
+        campaign.game_date = NaiveDate::from_ymd_opt(
+            first_birth.year() + 90,
+            first_birth.month(),
+            first_birth.day(),
+        )
+        .unwrap();
         campaign.advance_days(1).unwrap();
         campaign.execute_succession(first_heir).unwrap();
 
         let second_heir = campaign.add_heir("Елена Орлова", 25).unwrap();
         assert_eq!(
-            campaign.characters.iter().find(|character| character.id == second_heir).unwrap().parent_character_id,
+            campaign
+                .characters
+                .iter()
+                .find(|character| character.id == second_heir)
+                .unwrap()
+                .parent_character_id,
             Some(first_heir)
         );
-        let second_birth = campaign.characters.iter().find(|character| character.id == first_heir).unwrap().birth_date;
-        campaign.game_date = NaiveDate::from_ymd_opt(second_birth.year() + 90, second_birth.month(), second_birth.day()).unwrap();
+        let second_birth = campaign
+            .characters
+            .iter()
+            .find(|character| character.id == first_heir)
+            .unwrap()
+            .birth_date;
+        campaign.game_date = NaiveDate::from_ymd_opt(
+            second_birth.year() + 90,
+            second_birth.month(),
+            second_birth.day(),
+        )
+        .unwrap();
         campaign.advance_days(1).unwrap();
         assert_eq!(campaign.status, CampaignStatus::SuccessionPending);
         campaign.execute_succession(second_heir).unwrap();
@@ -1053,9 +1352,18 @@ mod tests {
     #[test]
     fn no_eligible_heir_ends_campaign_at_founder_death() {
         let mut campaign = campaign();
-        let founder_index = campaign.characters.iter().position(|c| c.id == campaign.founder_character_id).unwrap();
+        let founder_index = campaign
+            .characters
+            .iter()
+            .position(|c| c.id == campaign.founder_character_id)
+            .unwrap();
         let founder_birth = campaign.characters[founder_index].birth_date;
-        campaign.game_date = NaiveDate::from_ymd_opt(founder_birth.year() + 90, founder_birth.month(), founder_birth.day()).unwrap();
+        campaign.game_date = NaiveDate::from_ymd_opt(
+            founder_birth.year() + 90,
+            founder_birth.month(),
+            founder_birth.day(),
+        )
+        .unwrap();
         campaign.advance_days(1).unwrap();
         assert_eq!(campaign.status, CampaignStatus::EndedNoHeir);
     }

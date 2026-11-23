@@ -9,7 +9,11 @@ mod dynasty;
 fn is_dynasty_mode() -> bool {
     web_sys::window()
         .and_then(|window| window.location().search().ok())
-        .is_some_and(|query| query.split('&').any(|part| part == "?mode=dynasty" || part == "mode=dynasty"))
+        .is_some_and(|query| {
+            query
+                .split('&')
+                .any(|part| part == "?mode=dynasty" || part == "mode=dynasty")
+        })
 }
 
 #[cfg(not(target_arch = "wasm32"))]

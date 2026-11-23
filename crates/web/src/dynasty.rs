@@ -1,8 +1,8 @@
 use chrono::{Datelike, NaiveDate};
 use leptos::prelude::*;
 use sherlock_dynasty_core::{
-    Campaign, CampaignMode, CampaignSetup, CampaignStatus, CharacterStatus, EventStatus,
-    Origin, CLUB_CASH_ACCOUNT,
+    CLUB_CASH_ACCOUNT, Campaign, CampaignMode, CampaignSetup, CampaignStatus, CharacterStatus,
+    EventStatus, Origin,
 };
 
 #[cfg(target_arch = "wasm32")]
@@ -11,7 +11,8 @@ const STORAGE_KEY: &str = "sherlock.football-dynasty.v1";
 fn load_campaign() -> Result<Option<Campaign>, String> {
     #[cfg(target_arch = "wasm32")]
     {
-        let window = web_sys::window().ok_or_else(|| "Браузерное хранилище недоступно".to_owned())?;
+        let window =
+            web_sys::window().ok_or_else(|| "Браузерное хранилище недоступно".to_owned())?;
         let storage = window
             .local_storage()
             .map_err(|_| "Не удалось открыть локальное хранилище".to_owned())?
@@ -35,7 +36,8 @@ fn load_campaign() -> Result<Option<Campaign>, String> {
 fn save_campaign(campaign: &Campaign) -> Result<(), String> {
     #[cfg(target_arch = "wasm32")]
     {
-        let window = web_sys::window().ok_or_else(|| "Браузерное хранилище недоступно".to_owned())?;
+        let window =
+            web_sys::window().ok_or_else(|| "Браузерное хранилище недоступно".to_owned())?;
         let storage = window
             .local_storage()
             .map_err(|_| "Не удалось открыть локальное хранилище".to_owned())?
@@ -55,8 +57,8 @@ fn save_campaign(campaign: &Campaign) -> Result<(), String> {
 
 fn clear_saved_campaign() {
     #[cfg(target_arch = "wasm32")]
-    if let Some(storage) = web_sys::window()
-        .and_then(|window| window.local_storage().ok().flatten())
+    if let Some(storage) =
+        web_sys::window().and_then(|window| window.local_storage().ok().flatten())
     {
         let _ = storage.remove_item(STORAGE_KEY);
     }
@@ -65,8 +67,7 @@ fn clear_saved_campaign() {
 fn campaign_seed() -> u64 {
     #[cfg(target_arch = "wasm32")]
     {
-        return (js_sys::Date::now() as u64)
-            ^ ((js_sys::Math::random() * u64::MAX as f64) as u64);
+        return (js_sys::Date::now() as u64) ^ ((js_sys::Math::random() * u64::MAX as f64) as u64);
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
