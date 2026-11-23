@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "description": "Ordered seed tasks for the Rust migration; after these, the planning role derives one bounded task at a time from docs/MIGRATION_SCOPE.md.",
+  "tasks": [
+    {
+      "id": "WEB-001",
+      "title": "Create the Leptos WebAssembly client crate",
+      "objective": "Add a compilable Rust client crate to the workspace using the stable Leptos 0.8 line with client-side rendering. Add the minimum Trunk entry point and bootstrap HTML needed to build to wasm32-unknown-unknown. Do not add fake player, match, club, forecast or account data.",
+      "acceptance": [
+        "The web crate is a workspace member and cargo check -p sherlock-web --target wasm32-unknown-unknown succeeds.",
+        "The client mounts a real Leptos root component and has a small test or compile-time assertion covering its application entry contract.",
+        "The existing Axum API crate and its health endpoint remain intact."
+      ]
+    },
+    {
+      "id": "WEB-002",
+      "title": "Add primary user-facing route shells and navigation",
+      "objective": "Implement the first coherent navigation shell in the Rust client for Home, Football Alias, Players, Clubs, Matches, Statistics, Forecasts, Fantasy, News, Amateur Football and Football Dynasty. Keep hidden admin and operations routes out of the primary user navigation.",
+      "acceptance": [
+        "Every primary destination has a real route and a distinct route component.",
+        "Navigation works on narrow and wide layouts and the current route is represented accessibly.",
+        "No page displays invented live football facts or mock account data."
+      ]
+    },
+    {
+      "id": "WEB-003",
+      "title": "Implement honest loading, error and empty states",
+      "objective": "Add reusable client-side states for loading, request failure, empty results and unavailable data. Preserve the data rule that missing is not zero and partial coverage is not presented as complete.",
+      "acceptance": [
+        "State components are reusable and have focused tests.",
+        "Empty and unavailable data are visually distinct from valid zero values.",
+        "Error states provide a usable retry path where a retryable request exists."
+      ]
+    },
+    {
+      "id": "API-001",
+      "title": "Add versioned API routing and typed error responses",
+      "objective": "Extend the Axum API with a versioned /api/v1 router, a typed error response contract and request-level tests while retaining /healthz for infrastructure health checks.",
+      "acceptance": [
+        "The versioned router is composed without removing the existing health route.",
+        "Error responses have stable machine-readable codes and do not leak internal error details.",
+        "Axum tests exercise success and error responses without relying on production services."
+      ]
+    },
+    {
+      "id": "DOMAIN-001",
+      "title": "Introduce strongly typed football entity identifiers",
+      "objective": "Create Rust newtypes for player, club, fixture and competition identifiers and use them in a small set of domain contracts. Avoid stringly typed identifiers and do not assume undocumented production columns.",
+      "acceptance": [
+        "Identifier types validate their documented representation and support serde where required.",
+        "Unit tests cover valid and invalid identifiers.",
+        "Real football entities remain distinct from fictional Football Dynasty entities."
+      ]
+    },
+    {
+      "id": "DOMAIN-002",
+      "title": "Define player profile and statistics domain contracts",
+      "objective": "Add explicit Rust read models for player identity/profile, career totals and season totals. Keep match statistics separate and represent unknown values distinctly from numeric zero.",
+      "acceptance": [
+        "Career, season and match statistics are represented by separate types.",
+        "Missing values remain optional or explicitly unknown and are not converted to zero.",
+        "Serialization and invariant tests cover the contracts."
+      ]
+    },
+    {
+      "id": "API-002",
+      "title": "Add typed read contracts for clubs and fixtures",
+      "objective": "Add stable Rust API contracts for club identity, squad coverage and fixture/result summaries. Include provenance and observation timestamps where supported; do not claim live data until a real repository is connected.",
+      "acceptance": [
+        "Club and fixture contracts are typed and serializable.",
+        "Partial squad or fixture coverage can be represented explicitly.",
+        "Tests prove that missing coverage is not serialized as a complete or zero-valued result."
+      ]
+    },
+    {
+      "id": "WEB-004",
+      "title": "Connect the Rust client to the versioned API boundary",
+      "objective": "Create a typed client adapter for the new /api/v1 contract, including request failure handling and testable transport boundaries. Do not add production credentials or bypass server-side authorization.",
+      "acceptance": [
+        "The client uses typed request and response contracts rather than ad hoc JSON parsing.",
+        "Network failure and non-success HTTP responses become explicit UI states.",
+        "Tests exercise success, HTTP error and unavailable-server behavior."
+      ]
+    }
+  ]
+}
