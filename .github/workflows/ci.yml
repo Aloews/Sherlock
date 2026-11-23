@@ -19,6 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -26,8 +29,19 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Check agent patch policy
         run: python3 -m unittest discover -s .github/scripts -p 'test_rust_agent_network.py' -v
+      - name: Format Rust sources
+        run: cargo fmt --all
       - name: Check formatting
         run: cargo fmt --all -- --check
+      - name: Upload rustfmt source snapshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustfmt-source-snapshots
+          path: |
+            crates/dynasty-core/src/lib.rs
+            crates/web/src/dynasty.rs
+          if-no-files-found: error
+          retention-days: 1
       - name: Run Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Run tests

@@ -2,6 +2,8 @@
 use gloo_timers::callback::Interval;
 use leptos::prelude::*;
 use sherlock_game_core::{Game, GamePhase, GameSettings, bundled_cards};
+mod dynasty;
+use dynasty::DynastyApp;
 
 #[cfg(target_arch = "wasm32")]
 type TimerHandle = Interval;
@@ -44,6 +46,7 @@ fn random_seed() -> u64 {
 #[component]
 pub fn App() -> impl IntoView {
     let (game, set_game) = signal::<Option<Game>>(None);
+    let (dynasty_mode, set_dynasty_mode) = signal(false);
     let (team_one, set_team_one) = signal("Команда 1".to_string());
     let (team_two, set_team_two) = signal("Команда 2".to_string());
     let (round_length, set_round_length) = signal("60".to_string());
@@ -114,10 +117,10 @@ pub fn App() -> impl IntoView {
                     <span class="brand-mark">"S"</span>
                     <span class="brand-name">"SHERLOCK"</span>
                 </a>
-                <div class="topbar-tag">"FOOTBALL ALIAS"</div>
+                <button type="button" class="mode-switch" on:click=move |_| set_dynasty_mode.update(|active| *active = !*active)>{move || if dynasty_mode.get() { "Футбольный Элиас" } else { "Футбольная династия" }}</button>
             </header>
 
-            <section class="main-content">
+            <section class="main-content" class:mode-hidden=move || dynasty_mode.get()>
                 {move || {
                     match game.get() {
                         None => view! {
@@ -377,9 +380,12 @@ pub fn App() -> impl IntoView {
                     }
                 }}
             </section>
+            <section class="dynasty-content" class:mode-visible=move || dynasty_mode.get()>
+                <DynastyApp/>
+            </section>
             <footer class="footer">
                 <span>"SHERLOCK"</span>
-                <span>"FOOTBALL ALIAS"</span>
+                <span>"SHERLOCK FOOTBALL"</span>
             </footer>
         </main>
     }
