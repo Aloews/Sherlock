@@ -1,4 +1,15 @@
+#[cfg(target_arch = "wasm32")]
 mod dynasty;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod dynasty {
+    use leptos::prelude::*;
+
+    #[component]
+    pub fn DynastyApp() -> impl IntoView {
+        view! { <section></section> }
+    }
+}
 #[cfg(target_arch = "wasm32")]
 use gloo_timers::callback::Interval;
 use leptos::prelude::*;
