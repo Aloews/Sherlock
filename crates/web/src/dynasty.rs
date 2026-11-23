@@ -112,8 +112,8 @@ pub fn DynastyApp() -> impl IntoView {
                     let text = results.iter().map(|(fixture, score)| {
                         format!("{fixture}: {}:{}", score.home, score.away)
                     }).collect::<Vec<_>>().join(" · ");
-                    set_notice.set(Some(text));
                     save_and_set(updated, set_campaign, set_notice);
+                    set_notice.set(Some(text));
                 }
                 Err(error) => set_notice.set(Some(error.to_string())),
             }
@@ -124,8 +124,8 @@ pub fn DynastyApp() -> impl IntoView {
         if let Some(mut updated) = campaign.get() {
             match updated.train(next_training_focus(&focus.get())) {
                 Ok(improved) => {
-                    set_notice.set(Some(format!("Тренировка завершена. Игроков с ростом общего рейтинга: {improved}.")));
                     save_and_set(updated, set_campaign, set_notice);
+                    set_notice.set(Some(format!("Тренировка завершена. Игроков с ростом общего рейтинга: {improved}.")));
                 }
                 Err(error) => set_notice.set(Some(error.to_string())),
             }
@@ -344,7 +344,7 @@ pub fn DynastyApp() -> impl IntoView {
                                                     <thead><tr><th>"#"</th><th>"Клуб"</th><th>"И"</th><th>"В"</th><th>"Н"</th><th>"П"</th><th>"М"</th><th>"О"</th></tr></thead>
                                                     <tbody>
                                                         {standings.iter().enumerate().map(|(index, row)| view! {
-                                                            <tr class:dynasty-own-row=move || row.team == active.club.name>
+                                                            <tr class:dynasty-own-row=row.team == active.club.name>
                                                                 <td>{index + 1}</td><td>{row.team.clone()}</td><td>{row.played}</td><td>{row.wins}</td><td>{row.draws}</td><td>{row.losses}</td><td>{format!("{}:{}", row.goals_for, row.goals_against)}</td><td><strong>{row.points}</strong></td>
                                                             </tr>
                                                         }).collect_view()}
