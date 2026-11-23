@@ -491,16 +491,20 @@ pub fn DynastyApp() -> impl IntoView {
                                         </div>
                                     }).collect_view()}
                                 </div>
-                                {#if detail.campaign.status == "active"}
-                                    <div class="dynasty-add-heir">
-                                        <h3>"Назначить наследника"</h3>
-                                        <input prop:value=move || heir_name.get() on:input=move |event| heir_name.set(event_target_value(&event)) placeholder="Имя наследника"/>
-                                        <div class="dynasty-inline">
-                                            <input type="number" min="0" max="70" prop:value=move || heir_age.get() on:input=move |event| heir_age.set(event_target_value(&event))/>
-                                            <button class="dynasty-primary" disabled=move || busy.get() on:click=add_heir>"Добавить"</button>
+                                {if detail.campaign.status == "active" {
+                                    view! {
+                                        <div class="dynasty-add-heir">
+                                            <h3>"Назначить наследника"</h3>
+                                            <input prop:value=move || heir_name.get() on:input=move |event| heir_name.set(event_target_value(&event)) placeholder="Имя наследника"/>
+                                            <div class="dynasty-inline">
+                                                <input type="number" min="0" max="70" prop:value=move || heir_age.get() on:input=move |event| heir_age.set(event_target_value(&event))/>
+                                                <button class="dynasty-primary" disabled=move || busy.get() on:click=add_heir>"Добавить"</button>
+                                            </div>
                                         </div>
-                                    </div>
-                                {/if}
+                                    }.into_any()
+                                } else {
+                                    view! { <div></div> }.into_any()
+                                }}
                             </section>
 
                             <section class="dynasty-panel">
