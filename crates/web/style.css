@@ -188,3 +188,251 @@ h1, h2, p { margin-top: 0; }
   .answer-button { height: 60px; gap: 6px; font-size: 12px; }
   .footer { width: calc(100% - 32px); }
 }
+
+
+/* Football Dynasty */
+.mode-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.3rem;
+    border: 1px solid var(--border, #263346);
+    border-radius: 999px;
+    background: rgba(9, 18, 31, 0.78);
+}
+.mode-tabs button {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.65rem 1rem;
+    color: #91a1b7;
+    background: transparent;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+}
+.mode-tabs button.mode-active {
+    color: #101b27;
+    background: #b6ef52;
+}
+.dynasty-page {
+    width: min(1120px, 100%);
+    margin: 0 auto;
+    padding: 1.2rem 1.1rem 3rem;
+    color: #e8eef8;
+}
+.dynasty-heading, .dynasty-toolbar, .dynasty-section-title, .dynasty-inline,
+.dynasty-calendar-actions, .dynasty-list-row, .dynasty-money-row,
+.dynasty-chronicle-row, .dynasty-event-row, .dynasty-fixture-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.dynasty-heading {
+    margin: 0.8rem 0 1.4rem;
+    align-items: flex-end;
+}
+.dynasty-heading h1 {
+    margin: 0.35rem 0 0;
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    font-weight: 850;
+    letter-spacing: -0.06em;
+}
+.dynasty-heading h1 span { color: #b6ef52; }
+.dynasty-season-mark, .dynasty-panel-kicker, .dynasty-section-title span,
+.dynasty-stat span, .dynasty-field > span {
+    color: #8294ab;
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+}
+.dynasty-toolbar { margin-bottom: 1rem; color: #aebbd0; }
+.dynasty-toolbar button, .dynasty-calendar-actions button,
+.dynasty-choice-row button, .dynasty-secondary {
+    border: 1px solid #2a3a50;
+    border-radius: 0.75rem;
+    padding: 0.65rem 0.9rem;
+    color: #dbe7f7;
+    background: #142236;
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+.dynasty-toolbar button:disabled, .dynasty-calendar-actions button:disabled,
+.dynasty-choice-row button:disabled, .dynasty-primary:disabled { opacity: 0.55; cursor: wait; }
+.dynasty-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.dynasty-panel {
+    min-width: 0;
+    margin-bottom: 1rem;
+    padding: clamp(1rem, 2vw, 1.45rem);
+    border: 1px solid #26374c;
+    border-radius: 1.25rem;
+    background: linear-gradient(145deg, rgba(21, 37, 57, 0.96), rgba(12, 23, 38, 0.98));
+    box-shadow: 0 14px 35px rgba(0,0,0,.14);
+}
+.dynasty-section-title {
+    margin-bottom: 1rem;
+    align-items: baseline;
+}
+.dynasty-section-title h2, .dynasty-add-heir h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+.dynasty-section-title span { text-align: right; }
+.dynasty-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.dynasty-stat {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding: 1rem;
+    border: 1px solid #26374c;
+    border-radius: 1rem;
+    background: #122136;
+}
+.dynasty-stat strong {
+    overflow-wrap: anywhere;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+.dynasty-stat small, .dynasty-list-row small, .dynasty-fixture-row small,
+.dynasty-chronicle-row small { color: #91a1b7; font-size: 0.75rem; }
+.dynasty-list { display: grid; gap: 0.5rem; }
+.dynasty-list-row {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(132, 155, 182, .14);
+}
+.dynasty-list-row > div { display: grid; gap: 0.25rem; }
+.dynasty-pill {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba(182,239,82,.25);
+    border-radius: 999px;
+    padding: 0.25rem 0.55rem;
+    color: #b6ef52;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+}
+.dynasty-add-heir {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1.2rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid rgba(132,155,182,.18);
+}
+.dynasty-field { display: grid; gap: 0.4rem; margin-bottom: 0.75rem; }
+.dynasty-field input, .dynasty-field select, .dynasty-add-heir input {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #31445e;
+    border-radius: 0.7rem;
+    padding: 0.78rem 0.85rem;
+    color: #edf4ff;
+    background: #0d192a;
+    font: inherit;
+}
+.dynasty-inline { justify-content: flex-start; }
+.dynasty-inline input { width: 7rem; }
+.dynasty-primary {
+    border: 0;
+    border-radius: 0.75rem;
+    padding: 0.8rem 1rem;
+    color: #14202c;
+    background: #b6ef52;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 850;
+    cursor: pointer;
+}
+.dynasty-create { width: 100%; margin-top: 0.4rem; }
+.dynasty-campaign-card {
+    display: grid;
+    width: 100%;
+    gap: 0.35rem;
+    margin-bottom: 0.5rem;
+    padding: 0.9rem;
+    border: 1px solid #2a3c52;
+    border-radius: 0.8rem;
+    text-align: left;
+    color: #e8eef8;
+    background: #0e1c2e;
+    cursor: pointer;
+}
+.dynasty-campaign-card small { color: #91a1b7; }
+.dynasty-empty { color: #8ea0b8; font-size: 0.85rem; }
+.dynasty-calendar-actions { justify-content: flex-start; flex-wrap: wrap; }
+.dynasty-subtitle { margin-top: 1.3rem; }
+.dynasty-money-row { padding: 0.55rem 0; border-bottom: 1px solid rgba(132,155,182,.12); font-size: 0.82rem; }
+.dynasty-money-row strong { font-variant-numeric: tabular-nums; }
+.dynasty-chronicle-row { justify-content: flex-start; padding: 0.45rem 0; font-size: 0.82rem; }
+.dynasty-chronicle-row small { width: 3rem; flex: 0 0 3rem; }
+.dynasty-table { overflow-x: auto; }
+.dynasty-table-head, .dynasty-table-row {
+    display: grid;
+    grid-template-columns: minmax(9rem, 1fr) repeat(5, minmax(2rem, .35fr)) minmax(3rem, .45fr);
+    gap: 0.55rem;
+    align-items: center;
+    min-width: 540px;
+    padding: 0.65rem 0.4rem;
+    border-bottom: 1px solid rgba(132,155,182,.15);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+}
+.dynasty-table-head { color: #8fa1b9; font-size: 0.62rem; font-weight: 800; letter-spacing: .06em; }
+.dynasty-table-row strong { color: #edf4ff; }
+.dynasty-table-row b { color: #b6ef52; }
+.dynasty-fixtures { display: grid; gap: 0.65rem; margin-top: 1rem; }
+.dynasty-fixture-row {
+    flex-wrap: wrap;
+    padding: 0.75rem 0.85rem;
+    border: 1px solid rgba(132,155,182,.15);
+    border-radius: 0.8rem;
+    background: rgba(8,17,29,.45);
+    font-size: 0.8rem;
+}
+.dynasty-fixture-row strong { flex: 1 1 22rem; }
+.dynasty-fixture-row > span { color: #9cafc4; font-size: 0.62rem; font-weight: 800; }
+.dynasty-event-row {
+    align-items: flex-start;
+    padding: 0.95rem 0;
+    border-bottom: 1px solid rgba(132,155,182,.15);
+}
+.dynasty-event-row > div:first-child { display: grid; gap: 0.4rem; }
+.dynasty-event-row p { margin: 0; color: #9aabc0; font-size: 0.82rem; line-height: 1.5; }
+.dynasty-event-row small { color: #9aabc0; font-size: 0.7rem; }
+.dynasty-choice-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.dynasty-error {
+    margin-bottom: 1rem;
+    border: 1px solid rgba(255,112,112,.35);
+    border-radius: 0.9rem;
+    padding: 0.85rem 1rem;
+    color: #ffb9b9;
+    background: rgba(105,28,35,.2);
+    font-size: 0.85rem;
+}
+.dynasty-auth-panel p { max-width: 38rem; color: #9aabc0; line-height: 1.6; }
+@media (max-width: 760px) {
+    .mode-tabs { gap: 0.1rem; }
+    .mode-tabs button { padding: 0.6rem 0.65rem; font-size: 0.6rem; }
+    .dynasty-page { padding-inline: 0.75rem; }
+    .dynasty-columns { grid-template-columns: minmax(0, 1fr); }
+    .dynasty-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dynasty-heading { align-items: flex-start; flex-direction: column; }
+    .dynasty-event-row { flex-direction: column; }
+    .dynasty-choice-row { width: 100%; }
+}
