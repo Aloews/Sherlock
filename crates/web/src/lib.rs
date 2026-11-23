@@ -1,7 +1,7 @@
-use leptos::prelude::*;
-use sherlock_game_core::{Game, GameError, GamePhase, GameSettings, bundled_cards};
 #[cfg(target_arch = "wasm32")]
 use gloo_timers::callback::Interval;
+use leptos::prelude::*;
+use sherlock_game_core::{Game, GameError, GamePhase, GameSettings, bundled_cards};
 
 #[cfg(target_arch = "wasm32")]
 type TimerHandle = Interval;
