@@ -30,6 +30,15 @@ jobs:
         run: cargo fmt --all
       - name: Check formatting
         run: cargo fmt --all -- --check
+      - name: Upload rustfmt source snapshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustfmt-source-snapshots
+          path: |
+            crates/dynasty-core/src/lib.rs
+            crates/web/src/dynasty.rs
+          if-no-files-found: error
+          retention-days: 1
       - name: Run Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Run tests
