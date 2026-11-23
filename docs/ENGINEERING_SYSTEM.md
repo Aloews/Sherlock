@@ -13,6 +13,7 @@ This is a reusable operating model, piloted in Sherlock. Portable files are unde
 ## Skills and commands
 Skills: reality-first, release-gate, agent-handoff.
 Commands: /verify, /finish-task, /security-gate.
+Dispatch: `/dispatch` (launches named specialist subagents when the Claude Code runtime exposes the Task tool; otherwise requires sequential work).
 
 ## Sherlock adapter
 Preserve Rust-first migration. Do not call the product production-ready until parity, auth, persistence, multiplayer/realtime, Telegram flows, deployment and rollback are proven. Local-only game behavior must not be described as cloud-synchronized.
