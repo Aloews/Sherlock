@@ -8,8 +8,8 @@ pub fn effective_attribute(base: u8, fatigue: u8, morale: u8) -> u8 {
     let fatigue_penalty = u16::from(fatigue.min(100)) * 35;
     let fatigue_factor = 10_000_u16.saturating_sub(fatigue_penalty).max(6_500);
     let morale_modifier = (i16::from(morale.min(100)) - 50) * 4;
-    let adjusted = (u32::from(base.min(100)) * u32::from(fatigue_factor) / 10_000) as i16
-        + morale_modifier;
+    let adjusted =
+        (u32::from(base.min(100)) * u32::from(fatigue_factor) / 10_000) as i16 + morale_modifier;
     adjusted.clamp(1, 100) as u8
 }
 

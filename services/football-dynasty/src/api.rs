@@ -418,23 +418,39 @@ pub async fn create_campaign(
         .await?;
 
     // Build a balanced double round-robin from the campaign's persisted team IDs.
-    let teams=crate::fd_query_as!((Uuid,String),
-        "SELECT id,name FROM fd.teams WHERE campaign_id=$1 ORDER BY is_player_controlled DESC,name")
-        .bind(campaign_id).fetch_all(&mut *tx).await?;
-    let team_ids:Vec<Uuid>=teams.iter().map(|(id,_)|*id).collect();
-    let game_date:NaiveDate=crate::fd_query_scalar!(
-        "SELECT game_date FROM fd.campaigns WHERE id=$1"
-    ).bind(campaign_id).fetch_one(&mut *tx).await?;
-    let days_to_saturday=(5_i64-i64::from(game_date.weekday().num_days_from_monday())).rem_euclid(7);
-    let first_match_date=game_date+chrono::Duration::days(days_to_saturday);
-    let fixtures=crate::competition::generate_round_robin(
-        &team_ids,first_match_date,crate::competition::CompetitionRules::default()
-    ).map_err(|_|ApiError::conflict("competition_schedule_invalid"))?;
+    let teams = crate::fd_query_as!(
+        (Uuid, String),
+        "SELECT id,name FROM fd.teams WHERE campaign_id=$1 ORDER BY is_player_controlled DESC,name"
+    )
+    .bind(campaign_id)
+    .fetch_all(&mut *tx)
+    .await?;
+    let team_ids: Vec<Uuid> = teams.iter().map(|(id, _)| *id).collect();
+    let game_date: NaiveDate =
+        crate::fd_query_scalar!("SELECT game_date FROM fd.campaigns WHERE id=$1")
+            .bind(campaign_id)
+            .fetch_one(&mut *tx)
+            .await?;
+    let days_to_saturday =
+        (5_i64 - i64::from(game_date.weekday().num_days_from_monday())).rem_euclid(7);
+    let first_match_date = game_date + chrono::Duration::days(days_to_saturday);
+    let fixtures = crate::competition::generate_round_robin(
+        &team_ids,
+        first_match_date,
+        crate::competition::CompetitionRules::default(),
+    )
+    .map_err(|_| ApiError::conflict("competition_schedule_invalid"))?;
     for fixture in fixtures {
-        let home_team=teams.iter().find(|(id,_)|*id==fixture.home_team_id)
-            .map(|(_,name)|name.as_str()).ok_or_else(||ApiError::conflict("fixture_home_team_missing"))?;
-        let away_team=teams.iter().find(|(id,_)|*id==fixture.away_team_id)
-            .map(|(_,name)|name.as_str()).ok_or_else(||ApiError::conflict("fixture_away_team_missing"))?;
+        let home_team = teams
+            .iter()
+            .find(|(id, _)| *id == fixture.home_team_id)
+            .map(|(_, name)| name.as_str())
+            .ok_or_else(|| ApiError::conflict("fixture_home_team_missing"))?;
+        let away_team = teams
+            .iter()
+            .find(|(id, _)| *id == fixture.away_team_id)
+            .map(|(_, name)| name.as_str())
+            .ok_or_else(|| ApiError::conflict("fixture_away_team_missing"))?;
         crate::fd_query!(
             "INSERT INTO fd.season_fixtures
              (campaign_id,season_year,matchday,match_date,home_team,away_team,home_team_id,away_team_id)
@@ -487,10 +503,14 @@ async fn load_campaign(
     )
     .bind(campaign_id).bind(owner_id).fetch_optional(&mut **tx).await?.ok_or_else(ApiError::not_found)?;
 
-    let dynasty = crate::fd_query_as!(DynastyView,
+    let dynasty = crate::fd_query_as!(
+        DynastyView,
         "SELECT id,name,head_character_id,prestige FROM fd.dynasties WHERE id=$1 AND campaign_id=$2"
     )
-    .bind(campaign.dynasty_id).bind(campaign_id).fetch_one(&mut **tx).await?;
+    .bind(campaign.dynasty_id)
+    .bind(campaign_id)
+    .fetch_one(&mut **tx)
+    .await?;
 
     let founder = crate::fd_query_as!(CharacterView,
         "SELECT id,full_name,age,life_status,is_heir FROM fd.characters WHERE id=$1 AND campaign_id=$2"
@@ -502,7 +522,8 @@ async fn load_campaign(
     )
     .bind(campaign_id).fetch_all(&mut **tx).await?;
 
-    let clubs = crate::fd_query_as!(ClubView,
+    let clubs = crate::fd_query_as!(
+        ClubView,
         "SELECT id,name,city,reputation FROM fd.clubs WHERE campaign_id=$1 ORDER BY name",
     )
     .bind(campaign_id)
@@ -592,10 +613,11 @@ pub async fn create_heir(
         "INSERT INTO fd.family_relations (campaign_id,parent_character_id,child_character_id,relation_type) VALUES ($1,$2,$3,'parent_child')"
     )
     .bind(campaign_id).bind(campaign.0).bind(heir_id).execute(&mut *tx).await?;
-    let current_year: i32 = crate::fd_query_scalar!("SELECT current_year FROM fd.campaigns WHERE id=$1")
-        .bind(campaign_id)
-        .fetch_one(&mut *tx)
-        .await?;
+    let current_year: i32 =
+        crate::fd_query_scalar!("SELECT current_year FROM fd.campaigns WHERE id=$1")
+            .bind(campaign_id)
+            .fetch_one(&mut *tx)
+            .await?;
     crate::fd_query!(
         "INSERT INTO fd.chronicle (campaign_id,event_type,title,game_year,payload) VALUES ($1,'heir_born','A new heir joins the family', $2, $3)"
     )
@@ -625,13 +647,14 @@ pub async fn preview_succession(
 ) -> Result<Json<Vec<CharacterView>>, ApiError> {
     let mut tx = state.db.begin().await?;
     set_owner_scope(&mut tx, identity.telegram_id).await?;
-    let status: String =
-        crate::fd_query_scalar!("SELECT status FROM fd.campaigns WHERE id=$1 AND owner_telegram_id=$2")
-            .bind(campaign_id)
-            .bind(identity.telegram_id)
-            .fetch_optional(&mut *tx)
-            .await?
-            .ok_or_else(ApiError::not_found)?;
+    let status: String = crate::fd_query_scalar!(
+        "SELECT status FROM fd.campaigns WHERE id=$1 AND owner_telegram_id=$2"
+    )
+    .bind(campaign_id)
+    .bind(identity.telegram_id)
+    .fetch_optional(&mut *tx)
+    .await?
+    .ok_or_else(ApiError::not_found)?;
     if status != "succession_pending" {
         return Err(ApiError::conflict("succession_not_pending"));
     }
@@ -688,10 +711,12 @@ pub async fn execute_succession(
         .bind(campaign_id).bind(campaign.0).fetch_optional(&mut *tx).await?
     }.ok_or_else(|| ApiError::conflict("no_eligible_heir"))?;
 
-    crate::fd_query!("UPDATE fd.characters SET is_heir=false WHERE campaign_id=$1 AND is_heir=true")
-        .bind(campaign_id)
-        .execute(&mut *tx)
-        .await?;
+    crate::fd_query!(
+        "UPDATE fd.characters SET is_heir=false WHERE campaign_id=$1 AND is_heir=true"
+    )
+    .bind(campaign_id)
+    .execute(&mut *tx)
+    .await?;
 
     crate::fd_query!("UPDATE fd.dynasties SET head_character_id=$2,prestige=prestige+10 WHERE id=$1 AND campaign_id=$3")
         .bind(campaign.1).bind(heir.id).bind(campaign_id).execute(&mut *tx).await?;

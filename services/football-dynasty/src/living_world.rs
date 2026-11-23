@@ -79,24 +79,52 @@ pub fn resolve_incident(incident: WorldIncident, response: PlayerResponse) -> Wo
 
     match &response {
         PlayerResponse::HelpVictim => {
-            facts.push(WorldFact { key: "player_public_help".into(), value: 1, source_event_id: source_id.clone() });
-            facts.push(WorldFact { key: "victim_trust".into(), value: 2, source_event_id: source_id.clone() });
+            facts.push(WorldFact {
+                key: "player_public_help".into(),
+                value: 1,
+                source_event_id: source_id.clone(),
+            });
+            facts.push(WorldFact {
+                key: "victim_trust".into(),
+                value: 2,
+                source_event_id: source_id.clone(),
+            });
             reactions.push(WorldReaction::VictimTrustsPlayer);
             if witness_count > 0 {
                 reactions.push(WorldReaction::WitnessSharesIntervention);
-                delayed.push(DelayedConsequence { event_id: source_id.clone(), due_day: incident.day.saturating_add(2), kind: DelayedKind::NewsFollowUp });
+                delayed.push(DelayedConsequence {
+                    event_id: source_id.clone(),
+                    due_day: incident.day.saturating_add(2),
+                    kind: DelayedKind::NewsFollowUp,
+                });
             }
         }
-    PlayerResponse::ReportIncident => {
-            facts.push(WorldFact { key: "incident_reported".into(), value: 1, source_event_id: source_id.clone() });
+        PlayerResponse::ReportIncident => {
+            facts.push(WorldFact {
+                key: "incident_reported".into(),
+                value: 1,
+                source_event_id: source_id.clone(),
+            });
             reactions.push(WorldReaction::PoliceInvestigationOpened);
-            delayed.push(DelayedConsequence { event_id: source_id.clone(), due_day: incident.day.saturating_add(1), kind: DelayedKind::InvestigationUpdate });
+            delayed.push(DelayedConsequence {
+                event_id: source_id.clone(),
+                due_day: incident.day.saturating_add(1),
+                kind: DelayedKind::InvestigationUpdate,
+            });
         }
         PlayerResponse::Ignore => {
-            facts.push(WorldFact { key: "player_ignored_incident".into(), value: 1, source_event_id: source_id.clone() });
+            facts.push(WorldFact {
+                key: "player_ignored_incident".into(),
+                value: 1,
+                source_event_id: source_id.clone(),
+            });
             reactions.push(WorldReaction::NoImmediateReaction);
             if witness_count > 0 {
-                delayed.push(DelayedConsequence { event_id: source_id.clone(), due_day: incident.day.saturating_add(3), kind: DelayedKind::WitnessReport });
+                delayed.push(DelayedConsequence {
+                    event_id: source_id.clone(),
+                    due_day: incident.day.saturating_add(3),
+                    kind: DelayedKind::WitnessReport,
+                });
             }
         }
     }
@@ -113,8 +141,13 @@ pub fn resolve_incident(incident: WorldIncident, response: PlayerResponse) -> Wo
 }
 
 /// Resolve a delayed consequence only after its scheduled in-game day.
-pub fn resolve_delayed(consequence: &DelayedConsequence, current_day: u32) -> Option<WorldReaction> {
-    if current_day < consequence.due_day { return None; }
+pub fn resolve_delayed(
+    consequence: &DelayedConsequence,
+    current_day: u32,
+) -> Option<WorldReaction> {
+    if current_day < consequence.due_day {
+        return None;
+    }
     Some(match &consequence.kind {
         DelayedKind::NewsFollowUp => WorldReaction::LocalNewsFollowUp,
         DelayedKind::WitnessReport => WorldReaction::WitnessSharesIntervention,
@@ -140,17 +173,32 @@ mod tests {
     #[test]
     fn helping_with_witnesses_creates_public_and_delayed_reactions() {
         let result = resolve_incident(incident(10, vec!["npc-a"]), PlayerResponse::HelpVictim);
-        assert!(result.immediate_reactions.contains(&WorldReaction::VictimTrustsPlayer));
-        assert!(result.immediate_reactions.contains(&WorldReaction::WitnessSharesIntervention));
+        assert!(
+            result
+                .immediate_reactions
+                .contains(&WorldReaction::VictimTrustsPlayer)
+        );
+        assert!(
+            result
+                .immediate_reactions
+                .contains(&WorldReaction::WitnessSharesIntervention)
+        );
         assert_eq!(result.delayed[0].due_day, 12);
         assert_eq!(resolve_delayed(&result.delayed[0], 11), None);
-        assert_eq!(resolve_delayed(&result.delayed[0], 12), Some(WorldReaction::LocalNewsFollowUp));
+        assert_eq!(
+            resolve_delayed(&result.delayed[0], 12),
+            Some(WorldReaction::LocalNewsFollowUp)
+        );
     }
 
     #[test]
     fn no_witness_means_no_publicity_chain() {
         let result = resolve_incident(incident(5, vec![]), PlayerResponse::HelpVictim);
-        assert!(!result.immediate_reactions.contains(&WorldReaction::WitnessSharesIntervention));
+        assert!(
+            !result
+                .immediate_reactions
+                .contains(&WorldReaction::WitnessSharesIntervention)
+        );
         assert!(result.delayed.is_empty());
     }
 
@@ -159,14 +207,20 @@ mod tests {
         let result = resolve_incident(incident(4, vec![]), PlayerResponse::ReportIncident);
         assert_eq!(result.delayed[0].due_day, 5);
         assert_eq!(resolve_delayed(&result.delayed[0], 4), None);
-        assert_eq!(resolve_delayed(&result.delayed[0], 5), Some(WorldReaction::PoliceInvestigationOpened));
+        assert_eq!(
+            resolve_delayed(&result.delayed[0], 5),
+            Some(WorldReaction::PoliceInvestigationOpened)
+        );
     }
 
     #[test]
     fn ignore_can_be_reported_later_by_a_witness() {
         let result = resolve_incident(incident(7, vec!["npc-b"]), PlayerResponse::Ignore);
         assert_eq!(result.delayed[0].due_day, 10);
-        assert_eq!(resolve_delayed(&result.delayed[0], 10), Some(WorldReaction::WitnessSharesIntervention));
+        assert_eq!(
+            resolve_delayed(&result.delayed[0], 10),
+            Some(WorldReaction::WitnessSharesIntervention)
+        );
     }
 
     #[test]

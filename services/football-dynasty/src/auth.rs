@@ -44,7 +44,7 @@ impl IdentityVerifier for PostgresIdentityVerifier {
                 .execute(&mut *tx)
                 .await?;
             let telegram_id =
-                crate::fd_query_scalar!(Option<i64>,"SELECT public.tg_validate_init_data($1)")
+                crate::fd_query_scalar!(Option<i64>, "SELECT public.tg_validate_init_data($1)")
                     .bind(init_data)
                     .fetch_one(&mut *tx)
                     .await?;

@@ -1,12 +1,17 @@
 //! Squad validation and deterministic team-strength aggregation.
-use std::collections::BTreeSet;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 use uuid::Uuid;
 
 use crate::engine::TeamProfile;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Position { Goalkeeper, Defender, Midfielder, Forward }
+pub enum Position {
+    Goalkeeper,
+    Defender,
+    Midfielder,
+    Forward,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PlayerAttributes {
@@ -38,11 +43,18 @@ pub struct Formation {
 }
 
 impl Formation {
-    pub const FOUR_THREE_THREE: Self = Self { defenders: 4, midfielders: 3, forwards: 3 };
+    pub const FOUR_THREE_THREE: Self = Self {
+        defenders: 4,
+        midfielders: 3,
+        forwards: 3,
+    };
 
     fn is_valid(self) -> bool {
-        self.defenders >= 3 && self.midfielders >= 2 && self.forwards >= 1
-            && u16::from(self.defenders) + u16::from(self.midfielders) + u16::from(self.forwards) == 10
+        self.defenders >= 3
+            && self.midfielders >= 2
+            && self.forwards >= 1
+            && u16::from(self.defenders) + u16::from(self.midfielders) + u16::from(self.forwards)
+                == 10
     }
 }
 
@@ -56,7 +68,12 @@ pub struct TacticalPlan {
 
 impl Default for TacticalPlan {
     fn default() -> Self {
-        Self { pressing: 50, tempo: 50, width: 50, attacking_intent: 50 }
+        Self {
+            pressing: 50,
+            tempo: 50,
+            width: 50,
+            attacking_intent: 50,
+        }
     }
 }
 
@@ -116,8 +133,15 @@ pub fn build_team_profile(team_id: Uuid, lineup: &Lineup) -> Result<TeamProfile,
     if !lineup.formation.is_valid() {
         return Err(SquadError::InvalidFormation);
     }
-    if [lineup.tactics.pressing, lineup.tactics.tempo, lineup.tactics.width,
-        lineup.tactics.attacking_intent].iter().any(|value| *value > 100) {
+    if [
+        lineup.tactics.pressing,
+        lineup.tactics.tempo,
+        lineup.tactics.width,
+        lineup.tactics.attacking_intent,
+    ]
+    .iter()
+    .any(|value| *value > 100)
+    {
         return Err(SquadError::InvalidTactics);
     }
 
@@ -135,8 +159,20 @@ pub fn build_team_profile(team_id: Uuid, lineup: &Lineup) -> Result<TeamProfile,
             return Err(SquadError::PlayerUnavailable(player.id));
         }
         let a = player.attributes;
-        if [a.pace, a.shooting, a.passing, a.defending, a.physical, a.goalkeeping,
-            a.stamina, player.morale, player.fatigue].iter().any(|v| *v > 100) {
+        if [
+            a.pace,
+            a.shooting,
+            a.passing,
+            a.defending,
+            a.physical,
+            a.goalkeeping,
+            a.stamina,
+            player.morale,
+            player.fatigue,
+        ]
+        .iter()
+        .any(|v| *v > 100)
+        {
             return Err(SquadError::AttributeOutOfRange(player.id));
         }
         match player.position {
@@ -157,18 +193,39 @@ pub fn build_team_profile(team_id: Uuid, lineup: &Lineup) -> Result<TeamProfile,
 
     let gk = goalkeepers[0].attributes;
     let attack = average(forwards.iter().map(|p| {
-        weighted(p.attributes.shooting, p.attributes.pace, p.attributes.passing,
-            p.attributes.physical, [40, 25, 20, 15])
+        weighted(
+            p.attributes.shooting,
+            p.attributes.pace,
+            p.attributes.passing,
+            p.attributes.physical,
+            [40, 25, 20, 15],
+        )
     }));
     let midfield = average(midfielders.iter().map(|p| {
-        weighted(p.attributes.passing, p.attributes.stamina, p.attributes.pace,
-            p.attributes.defending, [40, 25, 20, 15])
+        weighted(
+            p.attributes.passing,
+            p.attributes.stamina,
+            p.attributes.pace,
+            p.attributes.defending,
+            [40, 25, 20, 15],
+        )
     }));
     let defence = average(defenders.iter().map(|p| {
-        weighted(p.attributes.defending, p.attributes.physical, p.attributes.pace,
-            p.attributes.passing, [40, 25, 20, 15])
+        weighted(
+            p.attributes.defending,
+            p.attributes.physical,
+            p.attributes.pace,
+            p.attributes.passing,
+            [40, 25, 20, 15],
+        )
     }));
-    let goalkeeper = weighted(gk.goalkeeping, gk.defending, gk.physical, gk.pace, [70, 15, 10, 5]);
+    let goalkeeper = weighted(
+        gk.goalkeeping,
+        gk.defending,
+        gk.physical,
+        gk.pace,
+        [70, 15, 10, 5],
+    );
     let morale = average(lineup.starters.iter().map(|p| p.morale));
     let fatigue = average(lineup.starters.iter().map(|p| p.fatigue));
 
@@ -194,10 +251,18 @@ mod tests {
             id: Uuid::from_u128(id),
             position,
             attributes: PlayerAttributes {
-                pace: 70, shooting: 65, passing: 70, defending: 65,
-                physical: 70, goalkeeping: 60, stamina: 75,
+                pace: 70,
+                shooting: 65,
+                passing: 70,
+                defending: 65,
+                physical: 70,
+                goalkeeping: 60,
+                stamina: 75,
             },
-            morale: 70, fatigue: 10, injured: false, suspended: false,
+            morale: 70,
+            fatigue: 10,
+            injured: false,
+            suspended: false,
         }
     }
 
@@ -206,7 +271,11 @@ mod tests {
         starters.extend((2..=5).map(|id| player(id, Position::Defender)));
         starters.extend((6..=8).map(|id| player(id, Position::Midfielder)));
         starters.extend((9..=11).map(|id| player(id, Position::Forward)));
-        Lineup { starters, formation: Formation::FOUR_THREE_THREE, tactics: TacticalPlan::default() }
+        Lineup {
+            starters,
+            formation: Formation::FOUR_THREE_THREE,
+            tactics: TacticalPlan::default(),
+        }
     }
 
     #[test]
@@ -222,22 +291,29 @@ mod tests {
     fn injured_starter_is_rejected() {
         let mut team = lineup();
         team.starters[3].injured = true;
-        assert!(matches!(build_team_profile(Uuid::from_u128(99), &team),
-            Err(SquadError::PlayerUnavailable(_))));
+        assert!(matches!(
+            build_team_profile(Uuid::from_u128(99), &team),
+            Err(SquadError::PlayerUnavailable(_))
+        ));
     }
 
     #[test]
     fn invalid_tactics_are_rejected() {
         let mut team = lineup();
         team.tactics.pressing = 101;
-        assert_eq!(build_team_profile(Uuid::from_u128(99), &team), Err(SquadError::InvalidTactics));
+        assert_eq!(
+            build_team_profile(Uuid::from_u128(99), &team),
+            Err(SquadError::InvalidTactics)
+        );
     }
 
     #[test]
     fn formation_position_mismatch_is_rejected() {
         let mut team = lineup();
         team.starters[10].position = Position::Midfielder;
-        assert_eq!(build_team_profile(Uuid::from_u128(99), &team),
-            Err(SquadError::PositionCountMismatch));
+        assert_eq!(
+            build_team_profile(Uuid::from_u128(99), &team),
+            Err(SquadError::PositionCountMismatch)
+        );
     }
 }

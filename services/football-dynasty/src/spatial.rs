@@ -15,7 +15,10 @@ pub struct PitchPoint {
 
 impl PitchPoint {
     pub fn new(x: u16, y: u16) -> Self {
-        Self { x: x.min(PITCH_MAX), y: y.min(PITCH_MAX) }
+        Self {
+            x: x.min(PITCH_MAX),
+            y: y.min(PITCH_MAX),
+        }
     }
 
     pub fn distance_squared(self, other: Self) -> u64 {
@@ -30,15 +33,25 @@ impl PitchPoint {
         let dx = i64::from(target.x) - i64::from(self.x);
         let dy = i64::from(target.y) - i64::from(self.y);
         let distance_sq = (dx * dx + dy * dy) as u64;
-        if distance_sq == 0 || max_step == 0 { return self; }
+        if distance_sq == 0 || max_step == 0 {
+            return self;
+        }
         let root = integer_sqrt(distance_sq).max(1);
-        let distance = if root * root < distance_sq { root + 1 } else { root };
-        if distance <= u64::from(max_step) { return target; }
+        let distance = if root * root < distance_sq {
+            root + 1
+        } else {
+            root
+        };
+        if distance <= u64::from(max_step) {
+            return target;
+        }
         let step = i64::from(max_step);
         let next_x = i64::from(self.x) + dx * step / distance as i64;
         let next_y = i64::from(self.y) + dy * step / distance as i64;
-        Self::new(next_x.clamp(0, i64::from(PITCH_MAX)) as u16,
-                  next_y.clamp(0, i64::from(PITCH_MAX)) as u16)
+        Self::new(
+            next_x.clamp(0, i64::from(PITCH_MAX)) as u16,
+            next_y.clamp(0, i64::from(PITCH_MAX)) as u16,
+        )
     }
 
     /// True when this point is within a defender's pressure radius.
@@ -90,9 +103,15 @@ impl PitchPoint {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PitchZone {
-    HomeLeft, HomeCentre, HomeRight,
-    MiddleLeft, MiddleCentre, MiddleRight,
-    AwayLeft, AwayCentre, AwayRight,
+    HomeLeft,
+    HomeCentre,
+    HomeRight,
+    MiddleLeft,
+    MiddleCentre,
+    MiddleRight,
+    AwayLeft,
+    AwayCentre,
+    AwayRight,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -102,13 +121,20 @@ pub struct Heatmap {
 }
 
 impl Default for Heatmap {
-    fn default() -> Self { Self { bins: [[0; HEATMAP_BINS]; HEATMAP_BINS], samples: 0 } }
+    fn default() -> Self {
+        Self {
+            bins: [[0; HEATMAP_BINS]; HEATMAP_BINS],
+            samples: 0,
+        }
+    }
 }
 
 impl Heatmap {
     pub fn record(&mut self, point: PitchPoint) {
-        let x = (usize::from(point.x) * HEATMAP_BINS / (usize::from(PITCH_MAX) + 1)).min(HEATMAP_BINS - 1);
-        let y = (usize::from(point.y) * HEATMAP_BINS / (usize::from(PITCH_MAX) + 1)).min(HEATMAP_BINS - 1);
+        let x = (usize::from(point.x) * HEATMAP_BINS / (usize::from(PITCH_MAX) + 1))
+            .min(HEATMAP_BINS - 1);
+        let y = (usize::from(point.y) * HEATMAP_BINS / (usize::from(PITCH_MAX) + 1))
+            .min(HEATMAP_BINS - 1);
         self.bins[y][x] = self.bins[y][x].saturating_add(1);
         self.samples = self.samples.saturating_add(1);
     }
@@ -127,10 +153,15 @@ impl Heatmap {
 }
 
 fn integer_sqrt(value: u64) -> u64 {
-    if value < 2 { return value; }
+    if value < 2 {
+        return value;
+    }
     let mut x = value;
     let mut y = x.div_ceil(2);
-    while y < x { x = y; y = (x + value / x) / 2; }
+    while y < x {
+        x = y;
+        y = (x + value / x) / 2;
+    }
     x
 }
 
@@ -140,9 +171,15 @@ mod tests {
 
     #[test]
     fn coordinates_are_bounded_and_zoned() {
-        assert_eq!(PitchPoint::new(u16::MAX, 0), PitchPoint { x: PITCH_MAX, y: 0 });
+        assert_eq!(
+            PitchPoint::new(u16::MAX, 0),
+            PitchPoint { x: PITCH_MAX, y: 0 }
+        );
         assert_eq!(PitchPoint::new(0, 0).zone(), PitchZone::HomeLeft);
-        assert_eq!(PitchPoint::new(5_000, 5_000).zone(), PitchZone::MiddleCentre);
+        assert_eq!(
+            PitchPoint::new(5_000, 5_000).zone(),
+            PitchZone::MiddleCentre
+        );
         assert_eq!(PitchPoint::new(10_000, 10_000).zone(), PitchZone::AwayRight);
     }
 
@@ -153,7 +190,10 @@ mod tests {
         let moved = start.move_towards(target, 500);
         assert!(start.distance_squared(moved) <= 250_000);
         assert_eq!(moved, PitchPoint::new(1_500, 1_000));
-        assert_eq!(moved.move_towards(PitchPoint::new(1_600, 1_000), 500), PitchPoint::new(1_600, 1_000));
+        assert_eq!(
+            moved.move_towards(PitchPoint::new(1_600, 1_000), 500),
+            PitchPoint::new(1_600, 1_000)
+        );
     }
 
     #[test]

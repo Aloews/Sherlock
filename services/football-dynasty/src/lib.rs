@@ -25,16 +25,16 @@ macro_rules! fd_query_scalar {
 
 pub mod api;
 pub mod auth;
+pub mod competition;
 pub mod config;
-pub mod errors;
 pub mod engine;
-pub mod squad;
+pub mod errors;
+pub mod http;
+pub mod living_world;
 pub mod match_engine;
 pub mod match_intelligence;
-pub mod spatial;
-pub mod competition;
 pub mod player_lifecycle;
-pub mod http;
 pub mod simulation;
-pub mod living_world;
+pub mod spatial;
+pub mod squad;
 pub mod state;

@@ -1,7 +1,7 @@
 use gloo_net::http::Request;
 use js_sys::{Date, Math, Reflect};
 use leptos::{prelude::*, task::spawn_local};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 fn api_url(path: &str) -> String {
     let base = option_env!("SHERLOCK_DYNASTY_API_URL").unwrap_or("");
@@ -228,21 +228,11 @@ async fn load_campaign_bundle(
     init_data: &str,
 ) -> Result<CampaignBundle, String> {
     let id = campaign_id;
-    let detail = api_get::<CampaignView>(
-        &format!("/api/v1/campaigns/{id}"),
-        init_data,
-    )
-    .await?;
-    let season = api_get::<SeasonView>(
-        &format!("/api/v1/campaigns/{id}/season"),
-        init_data,
-    )
-    .await?;
-    let events = api_get::<Vec<GameEvent>>(
-        &format!("/api/v1/campaigns/{id}/events"),
-        init_data,
-    )
-    .await?;
+    let detail = api_get::<CampaignView>(&format!("/api/v1/campaigns/{id}"), init_data).await?;
+    let season =
+        api_get::<SeasonView>(&format!("/api/v1/campaigns/{id}/season"), init_data).await?;
+    let events =
+        api_get::<Vec<GameEvent>>(&format!("/api/v1/campaigns/{id}/events"), init_data).await?;
 
     Ok(CampaignBundle {
         detail,
@@ -331,8 +321,14 @@ pub fn DynastyApp() -> impl IntoView {
         let dynasty = dynasty_name.get();
         let club = club_name.get();
         let origin_value = origin.get();
-        if name.trim().is_empty() || founder.trim().is_empty() || dynasty.trim().is_empty() || club.trim().is_empty() {
-            error.set(Some("Заполните название кампании, основателя, династию и клуб.".into()));
+        if name.trim().is_empty()
+            || founder.trim().is_empty()
+            || dynasty.trim().is_empty()
+            || club.trim().is_empty()
+        {
+            error.set(Some(
+                "Заполните название кампании, основателя, династию и клуб.".into(),
+            ));
             return;
         }
 
@@ -348,18 +344,18 @@ pub fn DynastyApp() -> impl IntoView {
                 club_name: &club,
             };
             match api_post::<CampaignCreated, _>("/api/v1/campaigns", &auth, &body).await {
-                Ok(created) => {
-                    match load_campaign_bundle(&created.id, &auth).await {
-                        Ok(bundle) => {
-                            active_bundle.set(Some(bundle));
-                            selected_campaign.set(Some(created.id));
-                            if let Ok(found) = api_get::<Vec<CampaignSummary>>("/api/v1/campaigns", &auth).await {
-                                campaigns.set(found);
-                            }
+                Ok(created) => match load_campaign_bundle(&created.id, &auth).await {
+                    Ok(bundle) => {
+                        active_bundle.set(Some(bundle));
+                        selected_campaign.set(Some(created.id));
+                        if let Ok(found) =
+                            api_get::<Vec<CampaignSummary>>("/api/v1/campaigns", &auth).await
+                        {
+                            campaigns.set(found);
                         }
-                        Err(message) => error.set(Some(message)),
                     }
-                }
+                    Err(message) => error.set(Some(message)),
+                },
                 Err(message) => error.set(Some(message)),
             }
             busy.set(false);
@@ -367,8 +363,12 @@ pub fn DynastyApp() -> impl IntoView {
     };
 
     let add_heir = move |_| {
-        let Some(auth) = init_data.get() else { return; };
-        let Some(id) = selected_campaign.get() else { return; };
+        let Some(auth) = init_data.get() else {
+            return;
+        };
+        let Some(id) = selected_campaign.get() else {
+            return;
+        };
         let name = heir_name.get();
         let age = heir_age.get().parse::<i32>().unwrap_or(-1);
         if name.trim().is_empty() || !(0..=70).contains(&age) {
@@ -378,12 +378,8 @@ pub fn DynastyApp() -> impl IntoView {
         busy.set(true);
         spawn_local(async move {
             let body = AddHeirBody { name: &name, age };
-            match api_post::<Character, _>(
-                &format!("/api/v1/campaigns/{id}/heirs"),
-                &auth,
-                &body,
-            )
-            .await
+            match api_post::<Character, _>(&format!("/api/v1/campaigns/{id}/heirs"), &auth, &body)
+                .await
             {
                 Ok(_) => refresh_selected(),
                 Err(message) => error.set(Some(message)),
@@ -393,8 +389,12 @@ pub fn DynastyApp() -> impl IntoView {
     };
 
     let advance_time = move |days: i32| {
-        let Some(auth) = init_data.get() else { return; };
-        let Some(id) = selected_campaign.get() else { return; };
+        let Some(auth) = init_data.get() else {
+            return;
+        };
+        let Some(id) = selected_campaign.get() else {
+            return;
+        };
         busy.set(true);
         error.set(None);
         spawn_local(async move {
@@ -414,11 +414,17 @@ pub fn DynastyApp() -> impl IntoView {
     };
 
     let resolve_event = move |event_id: String, choice_id: String| {
-        let Some(auth) = init_data.get() else { return; };
-        let Some(id) = selected_campaign.get() else { return; };
+        let Some(auth) = init_data.get() else {
+            return;
+        };
+        let Some(id) = selected_campaign.get() else {
+            return;
+        };
         busy.set(true);
         spawn_local(async move {
-            let body = ResolveEventBody { choice_id: &choice_id };
+            let body = ResolveEventBody {
+                choice_id: &choice_id,
+            };
             match api_post::<EmptyResponse, _>(
                 &format!("/api/v1/campaigns/{id}/events/{event_id}/resolve"),
                 &auth,
