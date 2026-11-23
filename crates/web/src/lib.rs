@@ -3,6 +3,20 @@ use gloo_timers::callback::Interval;
 use leptos::prelude::*;
 use sherlock_game_core::{Game, GamePhase, GameSettings, bundled_cards};
 
+mod dynasty;
+
+#[cfg(target_arch = "wasm32")]
+fn is_dynasty_mode() -> bool {
+    web_sys::window()
+        .and_then(|window| window.location().search().ok())
+        .is_some_and(|query| query.split('&').any(|part| part == "?mode=dynasty" || part == "mode=dynasty"))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn is_dynasty_mode() -> bool {
+    false
+}
+
 #[cfg(target_arch = "wasm32")]
 type TimerHandle = Interval;
 
@@ -43,6 +57,7 @@ fn random_seed() -> u64 {
 
 #[component]
 pub fn App() -> impl IntoView {
+    let dynasty_mode = is_dynasty_mode();
     let (game, set_game) = signal::<Option<Game>>(None);
     let (team_one, set_team_one) = signal("Команда 1".to_string());
     let (team_two, set_team_two) = signal("Команда 2".to_string());
@@ -114,10 +129,13 @@ pub fn App() -> impl IntoView {
                     <span class="brand-mark">"S"</span>
                     <span class="brand-name">"SHERLOCK"</span>
                 </a>
-                <div class="topbar-tag">"FOOTBALL ALIAS"</div>
+                <nav class="app-nav" aria-label="Игровые режимы">
+                    <a href="/?mode=alias" class:active=move || !dynasty_mode>"Футбольный Элиас"</a>
+                    <a href="/?mode=dynasty" class:active=move || dynasty_mode>"Футбольная династия"</a>
+                </nav>
             </header>
 
-            <section class="main-content">
+            <section class="main-content" class:hidden=move || dynasty_mode>
                 {move || {
                     match game.get() {
                         None => view! {
@@ -376,6 +394,9 @@ pub fn App() -> impl IntoView {
                         },
                     }
                 }}
+            </section>
+            <section class="main-content dynasty-main" class:hidden=move || !dynasty_mode>
+                <dynasty::DynastyScreen/>
             </section>
             <footer class="footer">
                 <span>"SHERLOCK"</span>

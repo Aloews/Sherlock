@@ -10,9 +10,12 @@ The Rust workspace now contains:
 - an Axum API with `GET /healthz`;
 - a Leptos WebAssembly client;
 - a pure Rust Alias game engine with two alternating teams, timed rounds, correct/skip actions, scoring, and match results;
-- a bundled 2,145-card catalogue imported from the legacy repository's `sherlock_cards.csv`.
+- a bundled 2,145-card catalogue imported from the legacy repository's `sherlock_cards.csv`;
+- a separate pure Rust Football Dynasty domain engine and Leptos mode for local campaign creation, a fictional club league and season, deterministic match results, standings, event choices, double-entry finance, family/heir lifecycle, succession, chronicle, and local save/reload.
 
-The current game mode runs locally on one device. Online rooms, multiplayer synchronization, Telegram authentication, persistent match history, and live Supabase card reads are not implemented in this initial slice. GitHub CI and browser runtime verification are release gates; this repository is not production-ready.
+Open the modes from the top navigation, or directly at `/?mode=alias` and `/?mode=dynasty`. Dynasty campaigns are stored in this browser's local storage only. They are not cloud-synced or server-authoritative. The original Dynasty product's complete feature set is not yet ported: player-level match tactics, transfers and contracts, senior staff, ownership structures, politics, fully autonomous rival dynasties and the complete living-world reaction graph remain future work.
+
+Online rooms, multiplayer synchronization, Telegram authentication, shared accounts, server persistence, and live Supabase reads are not implemented in this initial slice. GitHub CI and real browser runtime verification are release gates; this repository is not yet production-complete.
 
 ## Development
 
