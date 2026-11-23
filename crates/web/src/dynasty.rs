@@ -57,15 +57,7 @@ fn random_seed() -> u64 {
 
 fn money(value: i64) -> String {
     let sign = if value < 0 { "−" } else { "" };
-    let digits = value.unsigned_abs().to_string();
-    let mut grouped = String::new();
-    for (index, character) in digits.chars().enumerate() {
-        if index > 0 && (digits.len() - index).is_multiple_of(3) {
-            grouped.push(' ');
-        }
-        grouped.push(character);
-    }
-    format!("{sign}{grouped} €")
+    format!("{sign}{} €", value.unsigned_abs())
 }
 
 fn position_order(position: Position) -> u8 {
