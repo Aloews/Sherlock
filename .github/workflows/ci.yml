@@ -26,6 +26,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Check agent patch policy
         run: python3 -m unittest discover -s .github/scripts -p 'test_rust_agent_network.py' -v
+      - name: Format Rust sources
+        run: cargo fmt --all
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Run Clippy
