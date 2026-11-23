@@ -66,16 +66,28 @@ impl Player {
     pub fn overall(&self) -> u8 {
         let a = self.attributes;
         match self.position {
-            Position::Goalkeeper => Attributes::average(&[a.goalkeeping, a.defending, a.passing, a.physical]),
-            Position::Defender => Attributes::average(&[a.defending, a.physical, a.pace, a.passing]),
-            Position::Midfielder => Attributes::average(&[a.passing, a.stamina, a.pace, a.shooting]),
+            Position::Goalkeeper => {
+                Attributes::average(&[a.goalkeeping, a.defending, a.passing, a.physical])
+            }
+            Position::Defender => {
+                Attributes::average(&[a.defending, a.physical, a.pace, a.passing])
+            }
+            Position::Midfielder => {
+                Attributes::average(&[a.passing, a.stamina, a.pace, a.shooting])
+            }
             Position::Forward => Attributes::average(&[a.shooting, a.pace, a.physical, a.passing]),
         }
     }
 
     pub fn market_value(&self) -> u32 {
         let rating = u32::from(self.overall());
-        let age_factor = if self.age <= 23 { 135 } else if self.age <= 28 { 100 } else { 65 };
+        let age_factor = if self.age <= 23 {
+            135
+        } else if self.age <= 28 {
+            100
+        } else {
+            65
+        };
         rating.saturating_mul(rating).saturating_mul(age_factor) / 10
     }
 
@@ -324,24 +336,63 @@ impl Campaign {
 
         let mut random = seed.max(1);
         let positions = [
-            Position::Goalkeeper, Position::Goalkeeper,
-            Position::Defender, Position::Defender, Position::Defender, Position::Defender,
-            Position::Defender, Position::Defender, Position::Defender,
-            Position::Midfielder, Position::Midfielder, Position::Midfielder, Position::Midfielder,
-            Position::Midfielder, Position::Midfielder, Position::Midfielder,
-            Position::Forward, Position::Forward, Position::Forward, Position::Forward,
-            Position::Forward, Position::Forward,
+            Position::Goalkeeper,
+            Position::Goalkeeper,
+            Position::Defender,
+            Position::Defender,
+            Position::Defender,
+            Position::Defender,
+            Position::Defender,
+            Position::Defender,
+            Position::Defender,
+            Position::Midfielder,
+            Position::Midfielder,
+            Position::Midfielder,
+            Position::Midfielder,
+            Position::Midfielder,
+            Position::Midfielder,
+            Position::Midfielder,
+            Position::Forward,
+            Position::Forward,
+            Position::Forward,
+            Position::Forward,
+            Position::Forward,
+            Position::Forward,
         ];
         let names = [
-            "Марк Веллин", "Илья Ровен", "Нико Арден", "Леон Вест", "Данте Морен",
-            "Эрик Сольберг", "Алекс Ренар", "Томас Вейл", "Роман Келлер", "Матео Сорен",
-            "Лука Эстен", "Кирилл Норден", "Ян Берг", "Милан Роше", "Оскар Леван",
-            "Даниэль Коста", "Эмиль Фарен", "Тео Марек", "Рафаэль Дорн", "Саша Лорен",
-            "Адриан Вальс", "Макс Ривер",
+            "Марк Веллин",
+            "Илья Ровен",
+            "Нико Арден",
+            "Леон Вест",
+            "Данте Морен",
+            "Эрик Сольберг",
+            "Алекс Ренар",
+            "Томас Вейл",
+            "Роман Келлер",
+            "Матео Сорен",
+            "Лука Эстен",
+            "Кирилл Норден",
+            "Ян Берг",
+            "Милан Роше",
+            "Оскар Леван",
+            "Даниэль Коста",
+            "Эмиль Фарен",
+            "Тео Марек",
+            "Рафаэль Дорн",
+            "Саша Лорен",
+            "Адриан Вальс",
+            "Макс Ривер",
         ];
         let mut players = Vec::with_capacity(positions.len());
         for (index, position) in positions.into_iter().enumerate() {
-            players.push(make_player(index as u32 + 1, names[index], position, 20 + (next(&mut random) % 12) as u8, 54 + (next(&mut random) % 20) as u8, &mut random));
+            players.push(make_player(
+                index as u32 + 1,
+                names[index],
+                position,
+                20 + (next(&mut random) % 12) as u8,
+                54 + (next(&mut random) % 20) as u8,
+                &mut random,
+            ));
         }
 
         let opponents = vec![
@@ -374,7 +425,8 @@ impl Campaign {
             ledger: Vec::new(),
             last_training_day: None,
         };
-        campaign.club.starting_xi = best_lineup(&campaign.club.players, campaign.club.tactics.formation);
+        campaign.club.starting_xi =
+            best_lineup(&campaign.club.players, campaign.club.tactics.formation);
         campaign.fixtures = season_fixtures();
         campaign.transfer_market = generate_market(&mut random);
         campaign.seed = random;
@@ -387,7 +439,10 @@ impl Campaign {
         campaign.chronicle.push(ChronicleEntry {
             game_day: 1,
             title: "Начало новой династии".into(),
-            detail: format!("{} возглавил клуб {}.", campaign.manager_name, campaign.club.name),
+            detail: format!(
+                "{} возглавил клуб {}.",
+                campaign.manager_name, campaign.club.name
+            ),
         });
         Ok(campaign)
     }
@@ -401,8 +456,15 @@ impl Campaign {
             return Err(DynastyError::InvalidAge);
         }
         let id = self.heirs.iter().map(|heir| heir.id).max().unwrap_or(0) + 1;
-        self.heirs.push(Heir { id, name: name.clone(), age });
-        self.record_event("Новый наследник", format!("{name} включён в семейную династию."));
+        self.heirs.push(Heir {
+            id,
+            name: name.clone(),
+            age,
+        });
+        self.record_event(
+            "Новый наследник",
+            format!("{name} включён в семейную династию."),
+        );
         Ok(())
     }
 
@@ -413,11 +475,18 @@ impl Campaign {
     pub fn set_formation(&mut self, formation: Formation) {
         self.club.tactics.formation = formation;
         self.club.starting_xi = best_lineup(&self.club.players, formation);
-        self.record_event("Изменение тактики", format!("Выбрана схема {}.", formation.label()));
+        self.record_event(
+            "Изменение тактики",
+            format!("Выбрана схема {}.", formation.label()),
+        );
     }
 
     pub fn select_player(&mut self, player_id: u32) -> Result<(), DynastyError> {
-        let candidate = self.club.players.iter().find(|player| player.id == player_id)
+        let candidate = self
+            .club
+            .players
+            .iter()
+            .find(|player| player.id == player_id)
             .ok_or(DynastyError::PlayerNotFound)?;
         if candidate.injury_days > 0 || candidate.suspension_matches > 0 {
             return Err(DynastyError::PlayerUnavailable);
@@ -426,24 +495,37 @@ impl Campaign {
             return Err(DynastyError::PlayerAlreadySelected);
         }
         let position = candidate.position;
-        let (_, required_defenders, required_midfielders, required_forwards) = lineup_requirements(self.club.tactics.formation);
+        let (_, required_defenders, required_midfielders, required_forwards) =
+            lineup_requirements(self.club.tactics.formation);
         let required = match position {
             Position::Goalkeeper => 1,
             Position::Defender => required_defenders,
             Position::Midfielder => required_midfielders,
             Position::Forward => required_forwards,
         };
-        let selected_same_position = self.club.starting_xi.iter()
+        let selected_same_position = self
+            .club
+            .starting_xi
+            .iter()
             .filter_map(|id| self.club.players.iter().find(|player| player.id == *id))
             .filter(|player| player.position == position)
             .count();
         if selected_same_position >= required {
-            let weakest = self.club.starting_xi.iter().filter_map(|id| self.club.players.iter().find(|player| player.id == *id))
+            let weakest = self
+                .club
+                .starting_xi
+                .iter()
+                .filter_map(|id| self.club.players.iter().find(|player| player.id == *id))
                 .filter(|player| player.position == position)
                 .min_by_key(|player| player.overall())
                 .map(|player| player.id);
             if let Some(weakest_id) = weakest {
-                if let Some(index) = self.club.starting_xi.iter().position(|id| *id == weakest_id) {
+                if let Some(index) = self
+                    .club
+                    .starting_xi
+                    .iter()
+                    .position(|id| *id == weakest_id)
+                {
                     self.club.starting_xi[index] = player_id;
                 }
             }
@@ -478,7 +560,13 @@ impl Campaign {
                 heir.age = heir.age.saturating_add(1);
             }
         }
-        self.record_event("Тренировочный день", format!("Проведено занятие «{}». Изменение общего рейтинга получили {improved} игроков.", focus.label()));
+        self.record_event(
+            "Тренировочный день",
+            format!(
+                "Проведено занятие «{}». Изменение общего рейтинга получили {improved} игроков.",
+                focus.label()
+            ),
+        );
         Ok(improved)
     }
 
@@ -492,7 +580,10 @@ impl Campaign {
         }
         self.club.training_facility += 1;
         self.change_balance(-cost, "Модернизация тренировочной базы".into());
-        self.record_event("Новая тренировочная база", format!("Уровень базы повышен до {}.", self.club.training_facility));
+        self.record_event(
+            "Новая тренировочная база",
+            format!("Уровень базы повышен до {}.", self.club.training_facility),
+        );
         Ok(())
     }
 
@@ -500,7 +591,10 @@ impl Campaign {
         if self.club.players.len() >= MAX_SQUAD_SIZE {
             return Err(DynastyError::TransferWindowFull);
         }
-        let index = self.transfer_market.iter().position(|target| target.player.id == player_id)
+        let index = self
+            .transfer_market
+            .iter()
+            .position(|target| target.player.id == player_id)
             .ok_or(DynastyError::MarketTargetNotFound)?;
         let target = self.transfer_market[index].clone();
         if self.club.cash < i64::from(target.asking_price) {
@@ -508,8 +602,14 @@ impl Campaign {
         }
         self.transfer_market.remove(index);
         self.club.players.push(target.player.clone());
-        self.change_balance(-i64::from(target.asking_price), format!("Трансфер: {}", target.player.name));
-        self.record_event("Подписан контракт", format!("{} перешёл в {}.", target.player.name, self.club.name));
+        self.change_balance(
+            -i64::from(target.asking_price),
+            format!("Трансфер: {}", target.player.name),
+        );
+        self.record_event(
+            "Подписан контракт",
+            format!("{} перешёл в {}.", target.player.name, self.club.name),
+        );
         Ok(())
     }
 
@@ -520,17 +620,28 @@ impl Campaign {
         if self.club.players.len() <= MIN_SQUAD_SIZE {
             return Err(DynastyError::CannotSellBelowMinimum);
         }
-        let index = self.club.players.iter().position(|player| player.id == player_id)
+        let index = self
+            .club
+            .players
+            .iter()
+            .position(|player| player.id == player_id)
             .ok_or(DynastyError::PlayerNotFound)?;
         let player = self.club.players.remove(index);
         let price = player.market_value().saturating_mul(75) / 100;
         self.change_balance(i64::from(price), format!("Продажа игрока: {}", player.name));
-        self.record_event("Трансфер завершён", format!("{} покинул клуб за {} €.", player.name, price));
+        self.record_event(
+            "Трансфер завершён",
+            format!("{} покинул клуб за {} €.", player.name, price),
+        );
         Ok(price)
     }
 
     pub fn retire_to_heir(&mut self, heir_id: u32) -> Result<(), DynastyError> {
-        let index = self.heirs.iter().position(|heir| heir.id == heir_id).ok_or(DynastyError::HeirNotFound)?;
+        let index = self
+            .heirs
+            .iter()
+            .position(|heir| heir.id == heir_id)
+            .ok_or(DynastyError::HeirNotFound)?;
         let heir = self.heirs[index].clone();
         if heir.age < 18 {
             return Err(DynastyError::HeirNotAdult);
@@ -540,7 +651,17 @@ impl Campaign {
         self.manager_age = heir.age;
         self.heirs.remove(index);
         self.club.reputation = self.club.reputation.saturating_add(2).min(100);
-        self.record_event("Смена поколения", format!("{} продолжил управление династией после {}.", self.manager_name, self.retired_managers.last().map(String::as_str).unwrap_or("предшественника")));
+        self.record_event(
+            "Смена поколения",
+            format!(
+                "{} продолжил управление династией после {}.",
+                self.manager_name,
+                self.retired_managers
+                    .last()
+                    .map(String::as_str)
+                    .unwrap_or("предшественника")
+            ),
+        );
         Ok(())
     }
 
@@ -551,7 +672,9 @@ impl Campaign {
         if self.club.starting_xi.len() != 11 {
             return Err(DynastyError::InvalidLineup);
         }
-        let fixtures: Vec<Fixture> = self.fixtures.iter()
+        let fixtures: Vec<Fixture> = self
+            .fixtures
+            .iter()
             .filter(|fixture| fixture.matchday == self.matchday && fixture.score.is_none())
             .cloned()
             .collect();
@@ -564,31 +687,61 @@ impl Campaign {
             let home_rating = self.team_strength(fixture.home_team);
             let away_rating = self.team_strength(fixture.away_team);
             let score = simulate_score(self.seed, fixture.id, home_rating, away_rating);
-            if let Some(stored) = self.fixtures.iter_mut().find(|stored| stored.id == fixture.id) {
+            if let Some(stored) = self
+                .fixtures
+                .iter_mut()
+                .find(|stored| stored.id == fixture.id)
+            {
                 stored.score = Some(score);
             }
             if fixture.home_team == 0 || fixture.away_team == 0 {
                 self.apply_user_match(&fixture, score);
             }
-            played.push((format!("{} — {}", self.team_name(fixture.home_team), self.team_name(fixture.away_team)), score));
+            played.push((
+                format!(
+                    "{} — {}",
+                    self.team_name(fixture.home_team),
+                    self.team_name(fixture.away_team)
+                ),
+                score,
+            ));
         }
 
         self.game_day += 7;
         self.pay_weekly_wages();
         self.club.reputation = (i16::from(self.club.reputation) + 1).clamp(0, 100) as u8;
-        let user_fixture = played.iter().find(|(title, _)| title.contains(&self.club.name)).cloned();
+        let user_fixture = played
+            .iter()
+            .find(|(title, _)| title.contains(&self.club.name))
+            .cloned();
         if let Some((title, score)) = user_fixture {
-            self.record_event("Матч завершён", format!("{title}: {}:{}. Турнирная таблица обновлена.", score.home, score.away));
+            self.record_event(
+                "Матч завершён",
+                format!(
+                    "{title}: {}:{}. Турнирная таблица обновлена.",
+                    score.home, score.away
+                ),
+            );
         }
-        self.record_event("Обзор совета директоров", "Совет оценил результаты клуба и финансовое положение.".into());
+        self.record_event(
+            "Обзор совета директоров",
+            "Совет оценил результаты клуба и финансовое положение.".into(),
+        );
 
         if self.matchday == MATCHDAYS_PER_SEASON {
-            let champion = self.standings().first().map(|row| row.team.clone()).unwrap_or_default();
+            let champion = self
+                .standings()
+                .first()
+                .map(|row| row.team.clone())
+                .unwrap_or_default();
             if champion == self.club.name {
                 self.change_balance(300_000, "Призовые за победу в чемпионате".into());
                 self.club.reputation = self.club.reputation.saturating_add(8).min(100);
             }
-            self.record_event("Сезон завершён", format!("Чемпион сезона {}: {champion}.", self.season));
+            self.record_event(
+                "Сезон завершён",
+                format!("Чемпион сезона {}: {champion}.", self.season),
+            );
             self.season += 1;
             self.matchday = 1;
             for player in &mut self.club.players {
@@ -609,16 +762,18 @@ impl Campaign {
     }
 
     pub fn standings(&self) -> Vec<Standing> {
-        let mut rows: Vec<Standing> = (0..4).map(|index| Standing {
-            team: self.team_name(index).to_string(),
-            played: 0,
-            wins: 0,
-            draws: 0,
-            losses: 0,
-            goals_for: 0,
-            goals_against: 0,
-            points: 0,
-        }).collect();
+        let mut rows: Vec<Standing> = (0..4)
+            .map(|index| Standing {
+                team: self.team_name(index).to_string(),
+                played: 0,
+                wins: 0,
+                draws: 0,
+                losses: 0,
+                goals_for: 0,
+                goals_against: 0,
+                points: 0,
+            })
+            .collect();
 
         for fixture in &self.fixtures {
             let Some(score) = fixture.score else { continue };
@@ -647,10 +802,13 @@ impl Campaign {
                 }
             }
         }
-        rows.sort_by(|a, b| b.points.cmp(&a.points)
-            .then_with(|| b.goal_difference().cmp(&a.goal_difference()))
-            .then_with(|| b.goals_for.cmp(&a.goals_for))
-            .then_with(|| a.team.cmp(&b.team)));
+        rows.sort_by(|a, b| {
+            b.points
+                .cmp(&a.points)
+                .then_with(|| b.goal_difference().cmp(&a.goal_difference()))
+                .then_with(|| b.goals_for.cmp(&a.goals_for))
+                .then_with(|| a.team.cmp(&b.team))
+        });
         rows
     }
 
@@ -661,13 +819,20 @@ impl Campaign {
         if self.club.players.len() < 11 || self.club.players.len() > MAX_SQUAD_SIZE {
             return Err(DynastyError::InvalidSave);
         }
-        let mut ids = self.club.players.iter().map(|player| player.id).collect::<Vec<_>>();
+        let mut ids = self
+            .club
+            .players
+            .iter()
+            .map(|player| player.id)
+            .collect::<Vec<_>>();
         ids.sort_unstable();
         ids.dedup();
         if ids.len() != self.club.players.len() {
             return Err(DynastyError::InvalidSave);
         }
-        if self.club.starting_xi.len() != 11 || self.club.starting_xi.iter().any(|id| !ids.contains(id)) {
+        if self.club.starting_xi.len() != 11
+            || self.club.starting_xi.iter().any(|id| !ids.contains(id))
+        {
             return Err(DynastyError::InvalidSave);
         }
         Ok(())
@@ -675,12 +840,19 @@ impl Campaign {
 
     fn apply_user_match(&mut self, fixture: &Fixture, score: Score) {
         for player_id in self.club.starting_xi.clone() {
-            if let Some(player) = self.club.players.iter_mut().find(|player| player.id == player_id) {
+            if let Some(player) = self
+                .club
+                .players
+                .iter_mut()
+                .find(|player| player.id == player_id)
+            {
                 player.appearances = player.appearances.saturating_add(1);
                 player.fitness = player.fitness.saturating_sub(18);
                 player.morale = if score.home == score.away {
                     player.morale
-                } else if (fixture.home_team == 0 && score.home > score.away) || (fixture.away_team == 0 && score.away > score.home) {
+                } else if (fixture.home_team == 0 && score.home > score.away)
+                    || (fixture.away_team == 0 && score.away > score.home)
+                {
                     player.morale.saturating_add(2).min(100)
                 } else {
                     player.morale.saturating_sub(2)
@@ -690,21 +862,50 @@ impl Campaign {
                 }
             }
         }
-        let user_goals = if fixture.home_team == 0 { score.home } else { score.away };
-        let mut eligible: Vec<u32> = self.club.starting_xi.iter().filter_map(|id| self.club.players.iter().find(|p| p.id == *id))
-            .filter(|player| player.position == Position::Forward || player.position == Position::Midfielder)
-            .map(|player| player.id).collect();
+        let user_goals = if fixture.home_team == 0 {
+            score.home
+        } else {
+            score.away
+        };
+        let mut eligible: Vec<u32> = self
+            .club
+            .starting_xi
+            .iter()
+            .filter_map(|id| self.club.players.iter().find(|p| p.id == *id))
+            .filter(|player| {
+                player.position == Position::Forward || player.position == Position::Midfielder
+            })
+            .map(|player| player.id)
+            .collect();
         eligible.sort_unstable();
         if !eligible.is_empty() {
             for goal_index in 0..user_goals {
-                let seed_index = (self.seed.wrapping_add(u64::from(fixture.id) * 31 + u64::from(goal_index))) as usize % eligible.len();
-                if let Some(player) = self.club.players.iter_mut().find(|player| player.id == eligible[seed_index]) {
+                let seed_index = (self
+                    .seed
+                    .wrapping_add(u64::from(fixture.id) * 31 + u64::from(goal_index)))
+                    as usize
+                    % eligible.len();
+                if let Some(player) = self
+                    .club
+                    .players
+                    .iter_mut()
+                    .find(|player| player.id == eligible[seed_index])
+                {
                     player.goals = player.goals.saturating_add(1);
                 }
             }
         }
-        if self.club.starting_xi.iter().filter_map(|id| self.club.players.iter().find(|p| p.id == *id)).all(|p| p.injury_days == 0)
-            && (if fixture.home_team == 0 { score.away } else { score.home }) == 0
+        if self
+            .club
+            .starting_xi
+            .iter()
+            .filter_map(|id| self.club.players.iter().find(|p| p.id == *id))
+            .all(|p| p.injury_days == 0)
+            && (if fixture.home_team == 0 {
+                score.away
+            } else {
+                score.home
+            }) == 0
         {
             self.club.reputation = self.club.reputation.saturating_add(1).min(100);
         }
@@ -712,11 +913,20 @@ impl Campaign {
 
     fn team_strength(&self, team: usize) -> i16 {
         if team == 0 {
-            let selected: Vec<&Player> = self.club.starting_xi.iter().filter_map(|id| self.club.players.iter().find(|player| player.id == *id)).collect();
+            let selected: Vec<&Player> = self
+                .club
+                .starting_xi
+                .iter()
+                .filter_map(|id| self.club.players.iter().find(|player| player.id == *id))
+                .collect();
             if selected.is_empty() {
                 55
             } else {
-                (selected.iter().map(|player| i16::from(player.overall()) + i16::from(player.fitness) / 10).sum::<i16>() / selected.len() as i16)
+                (selected
+                    .iter()
+                    .map(|player| i16::from(player.overall()) + i16::from(player.fitness) / 10)
+                    .sum::<i16>()
+                    / selected.len() as i16)
                     + i16::from(self.club.tactics.attacking_intent.saturating_sub(50)) / 8
             }
         } else {
@@ -728,12 +938,20 @@ impl Campaign {
         if index == 0 {
             &self.club.name
         } else {
-            self.opponents.get(index - 1).map(String::as_str).unwrap_or("Неизвестный клуб")
+            self.opponents
+                .get(index - 1)
+                .map(String::as_str)
+                .unwrap_or("Неизвестный клуб")
         }
     }
 
     fn pay_weekly_wages(&mut self) {
-        let wages = self.club.players.iter().map(|player| i64::from(player.wage)).sum::<i64>();
+        let wages = self
+            .club
+            .players
+            .iter()
+            .map(|player| i64::from(player.wage))
+            .sum::<i64>();
         let sponsor = 80_000 + i64::from(self.club.reputation) * 1_000;
         self.change_balance(-wages, "Зарплаты игроков за неделю".into());
         self.change_balance(sponsor, "Спонсорский доход за неделю".into());
@@ -779,17 +997,31 @@ fn best_lineup(players: &[Player], formation: Formation) -> Vec<u32> {
         (Position::Midfielder, midfielders),
         (Position::Forward, forwards),
     ] {
-        let mut candidates: Vec<&Player> = players.iter().filter(|player| {
-            player.position == position && player.injury_days == 0 && player.suspension_matches == 0
-        }).collect();
+        let mut candidates: Vec<&Player> = players
+            .iter()
+            .filter(|player| {
+                player.position == position
+                    && player.injury_days == 0
+                    && player.suspension_matches == 0
+            })
+            .collect();
         candidates.sort_by_key(|player| std::cmp::Reverse(player.overall()));
         selected.extend(candidates.into_iter().take(count).map(|player| player.id));
     }
     selected
 }
 
-fn make_player(id: u32, name: &str, position: Position, age: u8, base: u8, seed: &mut u64) -> Player {
-    let rating = |offset: i16, random: u64| (i16::from(base) + offset + (random % 7) as i16 - 3).clamp(35, 92) as u8;
+fn make_player(
+    id: u32,
+    name: &str,
+    position: Position,
+    age: u8,
+    base: u8,
+    seed: &mut u64,
+) -> Player {
+    let rating = |offset: i16, random: u64| {
+        (i16::from(base) + offset + (random % 7) as i16 - 3).clamp(35, 92) as u8
+    };
     let attributes = Attributes {
         pace: rating(0, next(seed)),
         shooting: rating(1, next(seed)),
@@ -825,11 +1057,25 @@ fn generate_market(seed: &mut u64) -> Vec<TransferTarget> {
         ("Микаэль Тарен", Position::Midfielder),
         ("Артур Селин", Position::Forward),
     ];
-    candidates.into_iter().enumerate().map(|(index, (name, position))| {
-        let player = make_player(1_000 + index as u32 + (next(seed) % 400) as u32, name, position, 19 + (next(seed) % 10) as u8, 60 + (next(seed) % 15) as u8, seed);
-        let asking_price = player.market_value();
-        TransferTarget { player, asking_price }
-    }).collect()
+    candidates
+        .into_iter()
+        .enumerate()
+        .map(|(index, (name, position))| {
+            let player = make_player(
+                1_000 + index as u32 + (next(seed) % 400) as u32,
+                name,
+                position,
+                19 + (next(seed) % 10) as u8,
+                60 + (next(seed) % 15) as u8,
+                seed,
+            );
+            let asking_price = player.market_value();
+            TransferTarget {
+                player,
+                asking_price,
+            }
+        })
+        .collect()
 }
 
 fn season_fixtures() -> Vec<Fixture> {
@@ -845,7 +1091,13 @@ fn season_fixtures() -> Vec<Fixture> {
     let mut id = 1;
     for (index, round) in pairs.into_iter().enumerate() {
         for (home, away) in round {
-            fixtures.push(Fixture { id, matchday: index as u8 + 1, home_team: home, away_team: away, score: None });
+            fixtures.push(Fixture {
+                id,
+                matchday: index as u8 + 1,
+                home_team: home,
+                away_team: away,
+                score: None,
+            });
             id += 1;
         }
     }
@@ -891,7 +1143,14 @@ mod tests {
         assert_eq!(campaign.club.players.len(), 22);
         assert_eq!(campaign.club.starting_xi.len(), 11);
         assert_eq!(campaign.fixtures.len(), 12);
-        assert_eq!(campaign.standings().iter().map(|row| row.played).sum::<u8>(), 0);
+        assert_eq!(
+            campaign
+                .standings()
+                .iter()
+                .map(|row| row.played)
+                .sum::<u8>(),
+            0
+        );
         campaign.validate().unwrap();
     }
 
@@ -908,7 +1167,13 @@ mod tests {
     #[test]
     fn lineup_selection_replaces_only_the_same_position() {
         let mut campaign = new_campaign();
-        let forward = campaign.club.players.iter().find(|player| player.position == Position::Forward && !campaign.is_starter(player.id)).unwrap().id;
+        let forward = campaign
+            .club
+            .players
+            .iter()
+            .find(|player| player.position == Position::Forward && !campaign.is_starter(player.id))
+            .unwrap()
+            .id;
         campaign.select_player(forward).unwrap();
         assert_eq!(campaign.club.starting_xi.len(), 11);
         assert!(campaign.is_starter(forward));
@@ -921,14 +1186,24 @@ mod tests {
         campaign.train(TrainingFocus::Attack).unwrap();
         assert!(campaign.club.cash < old_balance);
         assert_eq!(campaign.last_training_day, Some(2));
-        assert!(campaign.ledger.last().unwrap().description.contains("Тренировка"));
+        assert!(
+            campaign
+                .ledger
+                .last()
+                .unwrap()
+                .description
+                .contains("Тренировка")
+        );
     }
 
     #[test]
     fn training_is_limited_to_one_session_per_day() {
         let mut campaign = new_campaign();
         campaign.train(TrainingFocus::Fitness).unwrap();
-        assert_eq!(campaign.train(TrainingFocus::Fitness), Err(DynastyError::TrainingAlreadyUsed));
+        assert_eq!(
+            campaign.train(TrainingFocus::Fitness),
+            Err(DynastyError::TrainingAlreadyUsed)
+        );
     }
 
     #[test]
@@ -937,9 +1212,30 @@ mod tests {
         let results = campaign.advance_matchday().unwrap();
         assert_eq!(results.len(), 2);
         assert_eq!(campaign.matchday, 2);
-        assert!(campaign.fixtures.iter().filter(|fixture| fixture.matchday == 1).all(|fixture| fixture.score.is_some()));
-        assert_eq!(campaign.club.players.iter().map(|player| player.appearances).sum::<u16>(), 11);
-        assert_eq!(campaign.standings().iter().map(|row| row.played).sum::<u8>(), 4);
+        assert!(
+            campaign
+                .fixtures
+                .iter()
+                .filter(|fixture| fixture.matchday == 1)
+                .all(|fixture| fixture.score.is_some())
+        );
+        assert_eq!(
+            campaign
+                .club
+                .players
+                .iter()
+                .map(|player| player.appearances)
+                .sum::<u16>(),
+            11
+        );
+        assert_eq!(
+            campaign
+                .standings()
+                .iter()
+                .map(|row| row.played)
+                .sum::<u8>(),
+            4
+        );
         assert!(campaign.ledger.len() >= 3);
     }
 
@@ -951,8 +1247,20 @@ mod tests {
         }
         assert_eq!(campaign.season, 2);
         assert_eq!(campaign.matchday, 1);
-        assert!(campaign.fixtures.iter().all(|fixture| fixture.score.is_none()));
-        assert_eq!(campaign.standings().iter().map(|row| row.played).sum::<u8>(), 0);
+        assert!(
+            campaign
+                .fixtures
+                .iter()
+                .all(|fixture| fixture.score.is_none())
+        );
+        assert_eq!(
+            campaign
+                .standings()
+                .iter()
+                .map(|row| row.played)
+                .sum::<u8>(),
+            0
+        );
     }
 
     #[test]
@@ -961,8 +1269,17 @@ mod tests {
         let candidate = campaign.transfer_market[0].clone();
         let balance = campaign.club.cash;
         campaign.sign_player(candidate.player.id).unwrap();
-        assert_eq!(campaign.club.cash, balance - i64::from(candidate.asking_price));
-        let reserve = campaign.club.players.iter().find(|player| !campaign.is_starter(player.id)).unwrap().id;
+        assert_eq!(
+            campaign.club.cash,
+            balance - i64::from(candidate.asking_price)
+        );
+        let reserve = campaign
+            .club
+            .players
+            .iter()
+            .find(|player| !campaign.is_starter(player.id))
+            .unwrap()
+            .id;
         let before_sale = campaign.club.cash;
         let proceeds = campaign.sell_player(reserve).unwrap();
         assert_eq!(campaign.club.cash, before_sale + i64::from(proceeds));
@@ -971,14 +1288,32 @@ mod tests {
     #[test]
     fn transfer_cannot_sell_a_starter_or_break_minimum_squad_size() {
         let mut campaign = new_campaign();
-        assert_eq!(campaign.sell_player(campaign.club.starting_xi[0]), Err(DynastyError::CannotSellStarter));
+        assert_eq!(
+            campaign.sell_player(campaign.club.starting_xi[0]),
+            Err(DynastyError::CannotSellStarter)
+        );
         for _ in 0..4 {
-            let reserve = campaign.club.players.iter().find(|player| !campaign.is_starter(player.id)).unwrap().id;
+            let reserve = campaign
+                .club
+                .players
+                .iter()
+                .find(|player| !campaign.is_starter(player.id))
+                .unwrap()
+                .id;
             campaign.sell_player(reserve).unwrap();
         }
         assert_eq!(campaign.club.players.len(), 18);
-        let reserve = campaign.club.players.iter().find(|player| !campaign.is_starter(player.id)).unwrap().id;
-        assert_eq!(campaign.sell_player(reserve), Err(DynastyError::CannotSellBelowMinimum));
+        let reserve = campaign
+            .club
+            .players
+            .iter()
+            .find(|player| !campaign.is_starter(player.id))
+            .unwrap()
+            .id;
+        assert_eq!(
+            campaign.sell_player(reserve),
+            Err(DynastyError::CannotSellBelowMinimum)
+        );
     }
 
     #[test]
@@ -986,7 +1321,10 @@ mod tests {
         let mut campaign = new_campaign();
         campaign.club.cash = 0;
         let candidate = campaign.transfer_market[0].player.id;
-        assert_eq!(campaign.sign_player(candidate), Err(DynastyError::InsufficientFunds));
+        assert_eq!(
+            campaign.sign_player(candidate),
+            Err(DynastyError::InsufficientFunds)
+        );
     }
 
     #[test]
@@ -1012,6 +1350,9 @@ mod tests {
     fn identical_campaign_seed_reproduces_the_same_first_matchday() {
         let mut first = Campaign::new("Антон", "ФК Север", 42).unwrap();
         let mut second = Campaign::new("Антон", "ФК Север", 42).unwrap();
-        assert_eq!(first.advance_matchday().unwrap(), second.advance_matchday().unwrap());
+        assert_eq!(
+            first.advance_matchday().unwrap(),
+            second.advance_matchday().unwrap()
+        );
     }
 }

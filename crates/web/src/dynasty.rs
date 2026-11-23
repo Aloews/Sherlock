@@ -23,7 +23,8 @@ fn load_campaign() -> Option<Campaign> {
 
 #[cfg(target_arch = "wasm32")]
 fn save_campaign(campaign: &Campaign) -> Result<(), String> {
-    let value = serde_json::to_string(campaign).map_err(|_| "Не удалось подготовить сохранение".to_string())?;
+    let value = serde_json::to_string(campaign)
+        .map_err(|_| "Не удалось подготовить сохранение".to_string())?;
     web_sys::window()
         .and_then(|window| window.local_storage().ok().flatten())
         .ok_or_else(|| "Хранилище браузера недоступно".to_string())?
@@ -90,8 +91,8 @@ pub fn DynastyApp() -> impl IntoView {
     let (notice, set_notice) = signal::<Option<String>>(None);
     let (tab, set_tab) = signal("club".to_string());
 
-    let create_campaign = move |_| {
-        match Campaign::new(&manager_name.get(), &club_name.get(), random_seed()) {
+    let create_campaign =
+        move |_| match Campaign::new(&manager_name.get(), &club_name.get(), random_seed()) {
             Ok(mut created) => {
                 let heir = heir_name.get();
                 if !heir.trim().is_empty() {
@@ -103,16 +104,17 @@ pub fn DynastyApp() -> impl IntoView {
                 save_and_set(created, set_campaign, set_notice);
             }
             Err(error) => set_notice.set(Some(error.to_string())),
-        }
-    };
+        };
 
     let next_matchday = move |_| {
         if let Some(mut updated) = campaign.get() {
             match updated.advance_matchday() {
                 Ok(results) => {
-                    let text = results.iter().map(|(fixture, score)| {
-                        format!("{fixture}: {}:{}", score.home, score.away)
-                    }).collect::<Vec<_>>().join(" · ");
+                    let text = results
+                        .iter()
+                        .map(|(fixture, score)| format!("{fixture}: {}:{}", score.home, score.away))
+                        .collect::<Vec<_>>()
+                        .join(" · ");
                     save_and_set(updated, set_campaign, set_notice);
                     set_notice.set(Some(text));
                 }
@@ -126,14 +128,14 @@ pub fn DynastyApp() -> impl IntoView {
             match updated.train(next_training_focus(&focus.get())) {
                 Ok(improved) => {
                     save_and_set(updated, set_campaign, set_notice);
-                    set_notice.set(Some(format!("Тренировка завершена. Игроков с ростом общего рейтинга: {improved}.")));
+                    set_notice.set(Some(format!(
+                        "Тренировка завершена. Игроков с ростом общего рейтинга: {improved}."
+                    )));
                 }
                 Err(error) => set_notice.set(Some(error.to_string())),
             }
         }
     };
-
-
 
     let add_heir = move |_| {
         if let Some(mut updated) = campaign.get() {
@@ -147,7 +149,9 @@ pub fn DynastyApp() -> impl IntoView {
 
     let reset_campaign = move |_| {
         #[cfg(target_arch = "wasm32")]
-        if let Some(storage) = web_sys::window().and_then(|window| window.local_storage().ok().flatten()) {
+        if let Some(storage) =
+            web_sys::window().and_then(|window| window.local_storage().ok().flatten())
+        {
             let _ = storage.remove_item(SAVE_KEY);
         }
         set_campaign.set(None);
