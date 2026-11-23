@@ -1,4 +1,16 @@
 #[cfg(target_arch = "wasm32")]
+mod dynasty;
+
+#[cfg(not(target_arch = "wasm32"))]
+mod dynasty {
+    use leptos::prelude::*;
+
+    #[component]
+    pub fn DynastyApp() -> impl IntoView {
+        view! { <section></section> }
+    }
+}
+#[cfg(target_arch = "wasm32")]
 use gloo_timers::callback::Interval;
 use leptos::prelude::*;
 use sherlock_game_core::{Game, GamePhase, GameSettings, bundled_cards};
@@ -44,6 +56,7 @@ fn random_seed() -> u64 {
 #[component]
 pub fn App() -> impl IntoView {
     let (game, set_game) = signal::<Option<Game>>(None);
+    let (show_dynasty, set_show_dynasty) = signal(false);
     let (team_one, set_team_one) = signal("Команда 1".to_string());
     let (team_two, set_team_two) = signal("Команда 2".to_string());
     let (round_length, set_round_length) = signal("60".to_string());
@@ -114,12 +127,26 @@ pub fn App() -> impl IntoView {
                     <span class="brand-mark">"S"</span>
                     <span class="brand-name">"SHERLOCK"</span>
                 </a>
-                <div class="topbar-tag">"FOOTBALL ALIAS"</div>
+                <nav class="mode-tabs">
+                    <button class:mode-active=move || !show_dynasty.get() on:click=move |_| {
+                        set_show_dynasty.set(false);
+                        if game.get().as_ref().is_some_and(|g| g.phase() == GamePhase::Active) {
+                            start_timer(timer, set_game);
+                        }
+                    }>"ЭЛИАС"</button>
+                    <button class:mode-active=move || show_dynasty.get() on:click=move |_| {
+                        timer.set_value(None);
+                        set_show_dynasty.set(true);
+                    }>"ФУТБОЛЬНАЯ ДИНАСТИЯ"</button>
+                </nav>
             </header>
 
             <section class="main-content">
                 {move || {
-                    match game.get() {
+                    if show_dynasty.get() {
+                        view! { <dynasty::DynastyApp/> }.into_any()
+                    } else {
+                        match game.get() {
                         None => view! {
                             <section class="setup-screen">
                                 <div class="eyebrow">
@@ -374,6 +401,7 @@ pub fn App() -> impl IntoView {
 
                             GamePhase::Setup => view! { <div class="loading-state">"Подготовка матча…"</div> }.into_any(),
                         },
+                        }
                     }
                 }}
             </section>

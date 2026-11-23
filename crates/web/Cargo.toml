@@ -19,4 +19,7 @@ sherlock-game-core = { path = "../game-core" }
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_error_panic_hook = "0.1"
 gloo-timers = "0.4.1"
+gloo-net = "0.6"
 js-sys = "0.3"
+serde.workspace = true
+serde_json.workspace = true
