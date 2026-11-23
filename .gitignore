@@ -1,0 +1,14 @@
+# Rust build output
+/target/
+
+# IDE and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local agent/model data
+.ollama/
+.env
+.env.*
+!.env.example
