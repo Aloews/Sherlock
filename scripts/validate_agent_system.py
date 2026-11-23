@@ -40,8 +40,9 @@ for path in skills:
     check_markdown(path, path.parent.name)
 for path in commands:
     check_markdown(path)
-if not (ROOT / "CLAUDE.md").is_file():
-    ERRORS.append("missing root CLAUDE.md entrypoint")
+for entrypoint in ("CLAUDE.md", "AGENTS.md"):
+    if not (ROOT / entrypoint).is_file():
+        ERRORS.append(f"missing root {entrypoint} entrypoint")
 if ERRORS:
     print("\n".join(f"ERROR: {item}" for item in ERRORS))
     sys.exit(1)
