@@ -1,7 +1,7 @@
 #[cfg(target_arch = "wasm32")]
 use gloo_timers::callback::Interval;
 use leptos::prelude::*;
-use sherlock_game_core::{Game, GameError, GamePhase, GameSettings, bundled_cards};
+use sherlock_game_core::{Game, GamePhase, GameSettings, bundled_cards};
 
 #[cfg(target_arch = "wasm32")]
 type TimerHandle = Interval;
@@ -77,7 +77,7 @@ pub fn App() -> impl IntoView {
                 set_setup_error.set(None);
                 set_game.set(Some(new_game));
                 timer_on_start.set_value(None);
-                start_timer(&timer_on_start, set_game);
+                start_timer(timer_on_start, set_game);
             }
             Err(error) => set_setup_error.set(Some(error.to_string())),
         }
@@ -96,7 +96,7 @@ pub fn App() -> impl IntoView {
             .as_ref()
             .is_some_and(|current| current.phase() == GamePhase::Active)
         {
-            start_timer(&timer_on_next, set_game);
+            start_timer(timer_on_next, set_game);
         }
     };
 
