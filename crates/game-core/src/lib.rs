@@ -177,6 +177,14 @@ impl Game {
         }
     }
 
+    pub fn card_number(&self) -> usize {
+        self.card_index + 1
+    }
+
+    pub fn total_cards(&self) -> usize {
+        self.cards.len()
+    }
+
     pub fn remaining_cards(&self) -> usize {
         self.cards.len().saturating_sub(self.card_index)
     }
