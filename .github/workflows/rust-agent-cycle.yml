@@ -1,0 +1,111 @@
+name: Rust Agent Cycle
+
+on:
+  workflow_run:
+    workflows: ["Rust CI"]
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: rust-agent-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  agent:
+    if: >-
+      (
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        startsWith(github.event.workflow_run.head_commit.message, '[agent-bootstrap]')
+      ) ||
+      (
+        github.event.workflow_run.head_branch == 'agents/rust-autonomy' &&
+        github.event.workflow_run.event == 'workflow_dispatch' &&
+        (github.event.workflow_run.conclusion == 'success' ||
+         github.event.workflow_run.conclusion == 'failure')
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out the exact CI commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Restore local Ollama runtime and model
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/bin/ollama
+            /usr/lib/ollama
+            ~/.ollama/models
+          key: ollama-v0.40.17-qwen2.5-coder-7b-${{ runner.os }}
+
+      - name: Install verified Ollama runtime when cache is absent
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ollama >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y zstd
+            archive="$RUNNER_TEMP/ollama-linux-amd64.tar.zst"
+            curl --fail --location --retry 3 --silent --show-error \
+              "https://github.com/ollama/ollama/releases/download/v0.40.17/ollama-linux-amd64.tar.zst" \
+              --output "$archive"
+            echo "1df9d6228bac5a22e420b242708c0d10e5b886db97bab99d446a41760f4e79af  $archive" | sha256sum --check
+            sudo tar --zstd -xf "$archive" -C /usr
+            rm -f "$archive"
+          fi
+          command -v ollama
+          ollama --version
+          mkdir -p "$HOME/.ollama/models"
+
+      - name: Start local model and verify it is available
+        env:
+          OLLAMA_HOST: 127.0.0.1:11434
+          AGENT_MODEL: qwen2.5-coder:7b
+        shell: bash
+        run: |
+          set -euo pipefail
+          (ollama serve > "$RUNNER_TEMP/ollama.log" 2>&1 &)
+          ready=0
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          test "$ready" = "1"
+          ollama pull "$AGENT_MODEL"
+          ollama show "$AGENT_MODEL" >/dev/null
+
+      - name: Collect failed Rust CI logs for repair
+        if: github.event.workflow_run.conclusion == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          gh run view "$RUN_ID" --repo "$GITHUB_REPOSITORY" --log-failed \
+            > "$RUNNER_TEMP/rust-ci-failed.log" || true
+
+      - name: Run planner, implementer and reviewer
+        env:
+          AGENT_MODE: ${{ github.event.workflow_run.conclusion == 'success' && 'advance' || 'repair' }}
+          AGENT_MODEL: qwen2.5-coder:7b
+          AGENT_FAILURE_LOG: ${{ runner.temp }}/rust-ci-failed.log
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python .github/scripts/rust_agent_network.py
