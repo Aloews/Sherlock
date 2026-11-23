@@ -543,7 +543,10 @@ impl Campaign {
         if self.club.cash < cost {
             return Err(DynastyError::InsufficientFunds);
         }
+        let previous_day = self.game_day;
         self.game_day += 1;
+        let elapsed_years = self.game_day / 365 - previous_day / 365;
+        self.advance_family_and_player_ages(elapsed_years);
         self.last_training_day = Some(self.game_day);
         self.change_balance(-cost, format!("Тренировка: {}", focus.label()));
         let mut improved = 0;
@@ -554,11 +557,6 @@ impl Campaign {
             }
             player.injury_days = player.injury_days.saturating_sub(1);
             player.contract_days = player.contract_days.saturating_sub(1);
-        }
-        for heir in &mut self.heirs {
-            if self.game_day % 365 == 0 {
-                heir.age = heir.age.saturating_add(1);
-            }
         }
         self.record_event(
             "Тренировочный день",
@@ -707,7 +705,14 @@ impl Campaign {
             ));
         }
 
+        let previous_day = self.game_day;
         self.game_day += 7;
+        let elapsed_years = self.game_day / 365 - previous_day / 365;
+        self.advance_family_and_player_ages(elapsed_years);
+        for player in &mut self.club.players {
+            player.injury_days = player.injury_days.saturating_sub(7);
+            player.contract_days = player.contract_days.saturating_sub(7);
+        }
         self.pay_weekly_wages();
         self.club.reputation = (i16::from(self.club.reputation) + 1).clamp(0, 100) as u8;
         let user_fixture = played
@@ -745,12 +750,7 @@ impl Campaign {
             self.season += 1;
             self.matchday = 1;
             for player in &mut self.club.players {
-                player.age = player.age.saturating_add(1);
                 player.fitness = player.fitness.saturating_add(20).min(100);
-                player.contract_days = player.contract_days.saturating_sub(7);
-            }
-            for heir in &mut self.heirs {
-                heir.age = heir.age.saturating_add(1);
             }
             self.fixtures = season_fixtures();
             self.transfer_market = generate_market(&mut self.seed);
@@ -836,6 +836,20 @@ impl Campaign {
             return Err(DynastyError::InvalidSave);
         }
         Ok(())
+    }
+
+    fn advance_family_and_player_ages(&mut self, elapsed_years: u32) {
+        if elapsed_years == 0 {
+            return;
+        }
+        let years = elapsed_years.min(u32::from(u8::MAX)) as u8;
+        self.manager_age = self.manager_age.saturating_add(years);
+        for player in &mut self.club.players {
+            player.age = player.age.saturating_add(years);
+        }
+        for heir in &mut self.heirs {
+            heir.age = heir.age.saturating_add(years);
+        }
     }
 
     fn apply_user_match(&mut self, fixture: &Fixture, score: Score) {
@@ -1107,8 +1121,8 @@ fn season_fixtures() -> Vec<Fixture> {
 fn simulate_score(seed: u64, fixture_id: u32, home_rating: i16, away_rating: i16) -> Score {
     let mut home_rng = seed ^ (u64::from(fixture_id) * 0x9E37_79B9);
     let mut away_rng = seed.rotate_left(17) ^ (u64::from(fixture_id) * 0x85EB_CA6B);
-    let home_chance = (850_i16 + (home_rating - away_rating) * 18).clamp(250, 1_850) as u64;
-    let away_chance = (850_i16 + (away_rating - home_rating) * 18).clamp(250, 1_850) as u64;
+    let home_chance = (157_i16 + (home_rating - away_rating) * 4).clamp(45, 350) as u64;
+    let away_chance = (125_i16 + (away_rating - home_rating) * 4).clamp(45, 350) as u64;
     let mut home = 0_u8;
     let mut away = 0_u8;
     for _ in 0..90 {
@@ -1237,6 +1251,53 @@ mod tests {
             4
         );
         assert!(campaign.ledger.len() >= 3);
+    }
+
+    #[test]
+    fn short_season_does_not_age_players_or_family_by_one_year() {
+        let mut campaign = new_campaign();
+        let player_age = campaign.club.players[0].age;
+        let heir_age = {
+            campaign.add_heir("Михаил", 17).unwrap();
+            campaign.heirs[0].age
+        };
+        let manager_age = campaign.manager_age;
+        for _ in 0..6 {
+            campaign.advance_matchday().unwrap();
+        }
+        assert_eq!(campaign.club.players[0].age, player_age);
+        assert_eq!(campaign.heirs[0].age, heir_age);
+        assert_eq!(campaign.manager_age, manager_age);
+    }
+
+    #[test]
+    fn players_and_heirs_age_only_after_a_full_game_year() {
+        let mut campaign = new_campaign();
+        campaign.add_heir("Михаил", 17).unwrap();
+        let player_age = campaign.club.players[0].age;
+        let heir_age = campaign.heirs[0].age;
+        let manager_age = campaign.manager_age;
+        campaign.game_day = 364;
+        campaign.advance_matchday().unwrap();
+        assert_eq!(campaign.club.players[0].age, player_age + 1);
+        assert_eq!(campaign.heirs[0].age, heir_age + 1);
+        assert_eq!(campaign.manager_age, manager_age + 1);
+    }
+
+    #[test]
+    fn match_scores_have_a_bounded_football_like_goal_rate() {
+        let mut total_goals = 0_u32;
+        let mut total_home_goals = 0_u32;
+        let sample_count = 512_u32;
+        for seed in 1..=sample_count {
+            let score = simulate_score(u64::from(seed), 1, 60, 60);
+            assert!(score.home <= 6 && score.away <= 6);
+            total_goals += u32::from(score.home) + u32::from(score.away);
+            total_home_goals += u32::from(score.home);
+        }
+        let average_goals = total_goals as f64 / f64::from(sample_count);
+        assert!((1.5..=3.5).contains(&average_goals), "average goals: {average_goals}");
+        assert!(total_home_goals > 0);
     }
 
     #[test]
