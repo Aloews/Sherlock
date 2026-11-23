@@ -54,7 +54,9 @@ impl fmt::Display for GameError {
         match self {
             Self::EmptyDeck => write!(f, "Для игры нужна хотя бы одна карточка"),
             Self::EmptyTeamName => write!(f, "У каждой команды должно быть название"),
-            Self::InvalidRoundLength => write!(f, "Длительность раунда должна быть от 1 до 180 секунд"),
+            Self::InvalidRoundLength => {
+                write!(f, "Длительность раунда должна быть от 1 до 180 секунд")
+            }
             Self::InvalidRoundCount => write!(f, "Количество раундов должно быть от 2 до 8"),
             Self::InvalidPhase => write!(f, "Действие недоступно на текущем этапе игры"),
         }
@@ -79,15 +81,15 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(
-        mut cards: Vec<Card>,
-        settings: GameSettings,
-        seed: u64,
-    ) -> Result<Self, GameError> {
+    pub fn new(mut cards: Vec<Card>, settings: GameSettings, seed: u64) -> Result<Self, GameError> {
         if cards.is_empty() {
             return Err(GameError::EmptyDeck);
         }
-        if settings.team_names.iter().any(|name| name.trim().is_empty()) {
+        if settings
+            .team_names
+            .iter()
+            .any(|name| name.trim().is_empty())
+        {
             return Err(GameError::EmptyTeamName);
         }
         if !(1..=180).contains(&settings.seconds_per_round) {
@@ -126,7 +128,11 @@ impl Game {
     }
 
     pub fn team_name(&self, index: usize) -> &str {
-        self.settings.team_names.get(index).map(String::as_str).unwrap_or("")
+        self.settings
+            .team_names
+            .get(index)
+            .map(String::as_str)
+            .unwrap_or("")
     }
 
     pub fn active_team(&self) -> usize {
@@ -272,7 +278,11 @@ impl Game {
 }
 
 fn shuffle<T>(items: &mut [T], seed: u64) {
-    let mut state = if seed == 0 { 0x9E37_79B9_7F4A_7C15 } else { seed };
+    let mut state = if seed == 0 {
+        0x9E37_79B9_7F4A_7C15
+    } else {
+        seed
+    };
     for index in (1..items.len()).rev() {
         state ^= state << 13;
         state ^= state >> 7;
