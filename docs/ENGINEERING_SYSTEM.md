@@ -32,3 +32,12 @@ Add stack, data sources, critical user flows, production boundaries, acceptance 
 
 ## Limits
 These files do not install themselves into Claude Code, connect MCPs, create credentials, launch background agents or enable continuous execution. Each repo/workspace must adopt and verify them. No direct production writes, destructive migrations, paid calls, infrastructure creation, merge or deployment without explicit authorization.
+
+ 
+## Runtime-specific roles
+- `alias-game-engine`: deterministic Rust Alias rules, timer, scoring and match completion.
+- `dynasty-simulation`: Football Dynasty simulation, transfers, finances, progression and succession.
+- `provider-integration`: external service adapters, protocol correctness and failure handling.
+
+## Structural validation
+Run `python3 scripts/validate_agent_system.py`. The `Validate agent system` GitHub Actions workflow runs the same check on relevant pull requests and pushes. It validates file layout, metadata and final newlines only. It does not prove that Claude Code loaded the agents or that subagents executed.
