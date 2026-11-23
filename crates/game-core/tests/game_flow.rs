@@ -1,4 +1,4 @@
-use sherlock_game_core::{bundled_cards, Game, GamePhase, GameSettings};
+use sherlock_game_core::{Game, GamePhase, GameSettings, bundled_cards};
 
 #[test]
 fn a_complete_two_team_match_has_two_turns_per_team() {
