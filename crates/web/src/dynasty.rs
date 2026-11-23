@@ -100,7 +100,14 @@ fn date_label(date: NaiveDate) -> String {
 }
 
 fn euros_millions(amount_minor: i64) -> String {
-    format!("€{} млн", amount_minor / 100 / 1_000_000)
+    let euros = amount_minor / 100;
+    if euros >= 1_000_000 {
+        format!("€{} млн", euros / 1_000_000)
+    } else if euros >= 1_000 {
+        format!("€{} тыс.", euros / 1_000)
+    } else {
+        format!("€{euros}")
+    }
 }
 
 fn status_label(status: CampaignStatus) -> &'static str {
@@ -126,7 +133,6 @@ pub fn DynastyScreen() -> impl IntoView {
     let (dynasty_name, set_dynasty_name) = signal("Дом Орловых".to_owned());
     let (club_name, set_club_name) = signal("Northbridge FC".to_owned());
     let (origin, set_origin) = signal("entrepreneur".to_owned());
-    let (mode, set_mode) = signal("sandbox".to_owned());
     let (active_tab, set_active_tab) = signal("overview".to_owned());
     let (heir_name, set_heir_name) = signal(String::new());
     let (heir_age, set_heir_age) = signal("18".to_owned());
@@ -140,14 +146,9 @@ pub fn DynastyScreen() -> impl IntoView {
             "newcomer" => Origin::Newcomer,
             _ => Origin::Entrepreneur,
         };
-        let selected_mode = if mode.get() == "scenario" {
-            CampaignMode::Scenario
-        } else {
-            CampaignMode::Sandbox
-        };
         let setup = CampaignSetup {
             name: campaign_name.get(),
-            mode: selected_mode,
+            mode: CampaignMode::Sandbox,
             founder_name: founder_name.get(),
             dynasty_name: dynasty_name.get(),
             club_name: club_name.get(),
@@ -219,13 +220,6 @@ pub fn DynastyScreen() -> impl IntoView {
                                     <option value="agent">"Футбольный агент"</option>
                                     <option value="executive">"Управленец"</option>
                                     <option value="newcomer">"Новый человек в футболе"</option>
-                                </select>
-                            </label>
-                            <label class="dynasty-field">
-                                <span>"РЕЖИМ"</span>
-                                <select prop:value=move || mode.get() on:change=move |event| set_mode.set(event_target_value(&event))>
-                                    <option value="sandbox">"Песочница"</option>
-                                    <option value="scenario">"Сценарий"</option>
                                 </select>
                             </label>
                         </div>

@@ -821,7 +821,7 @@ impl Campaign {
 
     fn allocate_id(&mut self) -> u64 {
         let id = self.next_id;
-        self.next_id = self.(*next_id).saturating_add(1);
+        self.next_id = self.next_id.saturating_add(1);
         id
     }
 }
@@ -881,7 +881,7 @@ fn generate_schedule(clubs: &[Club], first_date: NaiveDate, season_year: i32, ne
                     home_goals: None,
                     away_goals: None,
                 });
-                *next_id = next_id.saturating_add(1);
+                *next_id = (*next_id).saturating_add(1);
             }
         }
         let last = rotation.pop().expect("rotation has members");
@@ -902,7 +902,7 @@ fn generate_schedule(clubs: &[Club], first_date: NaiveDate, season_year: i32, ne
             home_goals: None,
             away_goals: None,
         });
-        *next_id = next_id.saturating_add(1);
+        *next_id = (*next_id).saturating_add(1);
     }
     fixtures
 }
