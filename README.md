@@ -4,29 +4,34 @@ A Rust-first rebuild of the Sherlock Scholes football product.
 
 The legacy application remains in [Aloews/sherlock-scholes-](https://github.com/Aloews/sherlock-scholes-). This repository is a separate implementation; the legacy production application and its data are not modified by work here.
 
-## Current state
+## Current implementation
 
-This repository currently contains the initial Rust workspace and an API health endpoint. It is **not** a feature-complete application and is not ready for production.
+The Rust workspace now contains:
+- an Axum API with `GET /healthz`;
+- a Leptos WebAssembly client;
+- a pure Rust Alias game engine with two alternating teams, timed rounds, correct/skip actions, scoring, and match results;
+- a bundled 2,145-card catalogue imported from the legacy repository's `sherlock_cards.csv`.
 
-## Architecture direction
-
-- Rust backend: Axum and Tokio.
-- PostgreSQL data boundary: preserve the existing Supabase data model and access policies until each domain has a verified replacement.
-- Web and Telegram client: Rust/WASM UI, selected after a feature and browser compatibility spike.
-- Existing football data collectors, scheduled jobs, and operational integrations must be inventoried before migration; they are not considered migrated merely because the API crate exists.
+The current game mode runs locally on one device. Online rooms, multiplayer synchronization, Telegram authentication, persistent match history, and live Supabase card reads are not implemented in this initial slice. GitHub CI and browser runtime verification are release gates; this repository is not production-ready.
 
 ## Development
 
-Requires a current stable Rust toolchain.
+Requires a current stable Rust toolchain and the `wasm32-unknown-unknown` target.
 
 ```sh
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace --all-targets
+cargo check -p sherlock-web --target wasm32-unknown-unknown
 cargo run -p sherlock-api
 ```
 
-The API health endpoint is available at `GET /healthz` (default bind address `0.0.0.0:8080`).
+To serve the WebAssembly app locally, install Trunk and run it from `crates/web`:
+
+```sh
+cd crates/web
+trunk serve
+```
 
 ## Migration contract
 
