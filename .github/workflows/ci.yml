@@ -35,27 +35,10 @@ jobs:
       - name: Check web client for WebAssembly
         if: hashFiles('crates/web/Cargo.toml') != ''
         run: cargo check -p sherlock-web --target wasm32-unknown-unknown
-      - name: Install pinned Trunk web bundler
-        if: hashFiles('crates/web/Cargo.toml') != ''
-        shell: bash
-        run: |
-          set -euo pipefail
-          archive="$RUNNER_TEMP/trunk-x86_64-unknown-linux-gnu.tar.gz"
-          curl --fail --location --retry 3 --silent --show-error \
-            "https://github.com/trunk-rs/trunk/releases/download/v0.22.1/trunk-x86_64-unknown-linux-gnu.tar.gz" \
-            --output "$archive"
-          echo "2ab8d548fd5ed9cda50906f61fd8654204e7893bd52ebbfd90533862b7d71ee1  $archive" | sha256sum --check
-          mkdir -p "$RUNNER_TEMP/trunk" "$HOME/.cargo/bin"
-          tar -xzf "$archive" -C "$RUNNER_TEMP/trunk"
-          binary="$(find "$RUNNER_TEMP/trunk" -type f -name trunk -perm -111 -print -quit)"
-          test -n "$binary"
-          install "$binary" "$HOME/.cargo/bin/trunk"
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          trunk --version
       - name: Build browser application bundle
         if: hashFiles('crates/web/Cargo.toml') != ''
         working-directory: crates/web
-        run: trunk build --release
+        run: bash build.sh
       - name: Verify generated browser assets
         if: hashFiles('crates/web/Cargo.toml') != ''
         shell: bash
