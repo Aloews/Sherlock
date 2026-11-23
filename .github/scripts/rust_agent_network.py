@@ -433,8 +433,14 @@ def main() -> int:
                 raise ValueError("git apply --check failed: " + check.stdout[-3000:])
             command(["git", "apply", "--"], input_text=patch)
             run_checks()
+            untracked_after_checks = command(["git", "ls-files", "--others", "--exclude-standard"]).stdout.splitlines()
+            if untracked_after_checks:
+                command(["git", "add", "-N", "--", *untracked_after_checks])
             changed = command(["git", "diff", "--name-only"]).stdout.splitlines()
-            if set(changed) != set(paths) or any(not allowed_path(path) for path in changed):
+            source_changed = set(changed) - {"Cargo.lock"}
+            if source_changed != set(paths) or any(
+                path != "Cargo.lock" and not allowed_path(path) for path in changed
+            ):
                 raise ValueError("Post-apply file set differs from the validated patch")
             final_diff = command(["git", "diff", "--"]).stdout
             review = request_model(
