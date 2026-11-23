@@ -55,7 +55,7 @@ jobs:
               and conclusion in ("success", "failure")
           )
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
-              output.write("run_agent=" + ("true" if qualifies else "false") + "\\n")
+              output.write("run_agent=" + ("true" if qualifies else "false") + "\n")
           PY
 
       - name: Restore local Ollama runtime and model
