@@ -51,13 +51,9 @@ pub fn App() -> impl IntoView {
     let (setup_error, set_setup_error) = signal::<Option<String>>(None);
 
     let timer = Rc::new(RefCell::new(None::<TimerHandle>));
-    let timer_on_cleanup = timer.clone();
-    on_cleanup(move || {
-        timer_on_cleanup.borrow_mut().take();
-    });
 
     let timer_on_start = timer.clone();
-    let on_start = move |_| {
+    let on_start = Rc::new(move || {
         let mut cards = bundled_cards();
         let selected_category = category.get();
         if selected_category != "all" {
@@ -83,10 +79,10 @@ pub fn App() -> impl IntoView {
             }
             Err(error) => set_setup_error.set(Some(error.to_string())),
         }
-    };
+    });
 
     let timer_on_next = timer.clone();
-    let on_next_round = move |_| {
+    let on_next_round = Rc::new(move || {
         set_game.update(|current| {
             if let Some(game) = current {
                 let _ = game.next_round();
@@ -100,14 +96,14 @@ pub fn App() -> impl IntoView {
         {
             start_timer(&timer_on_next, set_game);
         }
-    };
+    });
 
     let timer_on_reset = timer.clone();
-    let on_new_game = move |_| {
+    let on_new_game = Rc::new(move || {
         timer_on_reset.borrow_mut().take();
         set_game.set(None);
         set_setup_error.set(None);
-    };
+    });
 
     view! {
         <main class="app-shell">
@@ -121,6 +117,9 @@ pub fn App() -> impl IntoView {
 
             <section class="main-content">
                 {move || {
+                    let on_start = on_start.clone();
+                    let on_next_round = on_next_round.clone();
+                    let on_new_game = on_new_game.clone();
                     match game.get() {
                         None => view! {
                             <section class="setup-screen">
@@ -215,7 +214,7 @@ pub fn App() -> impl IntoView {
                                         <p class="error-message" role="alert">{message}</p>
                                     })}
 
-                                    <button class="primary-button start-button" on:click=on_start>
+                                    <button class="primary-button start-button" on:click=move |_| on_start()>
                                         <span>"Начать игру"</span>
                                         <span class="button-arrow">"→"</span>
                                     </button>
@@ -339,7 +338,7 @@ pub fn App() -> impl IntoView {
                                             <strong>{move || game.get().map(|g| g.scores()[1]).unwrap_or(0)}</strong>
                                         </div>
                                     </div>
-                                    <button class="primary-button" on:click=on_next_round>
+                                    <button class="primary-button" on:click=move |_| on_next_round()>
                                         <span>"Продолжить"</span>
                                         <span class="button-arrow">"→"</span>
                                     </button>
@@ -367,7 +366,7 @@ pub fn App() -> impl IntoView {
                                             <strong>{move || game.get().map(|g| g.scores()[1]).unwrap_or(0)}</strong>
                                         </div>
                                     </div>
-                                    <button class="primary-button" on:click=on_new_game>
+                                    <button class="primary-button" on:click=move |_| on_new_game()>
                                         <span>"Новая игра"</span>
                                         <span class="button-arrow">"↻"</span>
                                     </button>
