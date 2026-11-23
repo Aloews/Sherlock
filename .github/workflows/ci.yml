@@ -35,5 +35,31 @@ jobs:
       - name: Check web client for WebAssembly
         if: hashFiles('crates/web/Cargo.toml') != ''
         run: cargo check -p sherlock-web --target wasm32-unknown-unknown
+      - name: Install pinned Trunk web bundler
+        if: hashFiles('crates/web/Cargo.toml') != ''
+        run: cargo install trunk --version 0.22.1 --locked
+      - name: Build browser application bundle
+        if: hashFiles('crates/web/Cargo.toml') != ''
+        working-directory: crates/web
+        run: trunk build --release
+      - name: Verify generated browser assets
+        if: hashFiles('crates/web/Cargo.toml') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s crates/web/dist/index.html
+          wasm_file="$(find crates/web/dist -maxdepth 1 -type f -name '*.wasm' -size +0c -print -quit)"
+          test -n "$wasm_file"
+          js_file="$(find crates/web/dist -maxdepth 1 -type f -name '*.js' -size +0c -print -quit)"
+          test -n "$js_file"
+          echo "Verified browser entry, WASM module and JS loader."
+      - name: Upload browser build artifact
+        if: hashFiles('crates/web/Cargo.toml') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: sherlock-web-dist
+          path: crates/web/dist/
+          if-no-files-found: error
+          retention-days: 7
       - name: Release build
         run: cargo build --release --workspace
