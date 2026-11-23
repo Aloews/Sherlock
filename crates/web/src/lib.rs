@@ -1,8 +1,5 @@
 use leptos::prelude::*;
 use sherlock_game_core::{Game, GameError, GamePhase, GameSettings, bundled_cards};
-use std::cell::RefCell;
-use std::rc::Rc;
-
 #[cfg(target_arch = "wasm32")]
 use gloo_timers::callback::Interval;
 
@@ -12,7 +9,10 @@ type TimerHandle = Interval;
 #[cfg(not(target_arch = "wasm32"))]
 type TimerHandle = ();
 
-fn start_timer(timer: &Rc<RefCell<Option<TimerHandle>>>, set_game: WriteSignal<Option<Game>>) {
+fn start_timer(
+    timer: StoredValue<Option<TimerHandle>, LocalStorage>,
+    set_game: WriteSignal<Option<Game>>,
+) {
     #[cfg(target_arch = "wasm32")]
     {
         let interval = Interval::new(1_000, move || {
@@ -22,7 +22,7 @@ fn start_timer(timer: &Rc<RefCell<Option<TimerHandle>>>, set_game: WriteSignal<O
                 }
             });
         });
-        *timer.borrow_mut() = Some(interval);
+        timer.set_value(Some(interval));
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -50,10 +50,12 @@ pub fn App() -> impl IntoView {
     let (category, set_category) = signal("all".to_string());
     let (setup_error, set_setup_error) = signal::<Option<String>>(None);
 
-    let timer = Rc::new(RefCell::new(None::<TimerHandle>));
+    let timer = StoredValue::new_local(None::<TimerHandle>);
+    let timer_on_cleanup = timer;
+    on_cleanup(move || timer_on_cleanup.set_value(None));
 
-    let timer_on_start = timer.clone();
-    let on_start = Rc::new(move || {
+    let timer_on_start = timer;
+    let on_start = move || {
         let mut cards = bundled_cards();
         let selected_category = category.get();
         if selected_category != "all" {
@@ -74,21 +76,21 @@ pub fn App() -> impl IntoView {
                 }
                 set_setup_error.set(None);
                 set_game.set(Some(new_game));
-                timer_on_start.borrow_mut().take();
+                timer_on_start.set_value(None);
                 start_timer(&timer_on_start, set_game);
             }
             Err(error) => set_setup_error.set(Some(error.to_string())),
         }
-    });
+    };
 
-    let timer_on_next = timer.clone();
-    let on_next_round = Rc::new(move || {
+    let timer_on_next = timer;
+    let on_next_round = move || {
         set_game.update(|current| {
             if let Some(game) = current {
                 let _ = game.next_round();
             }
         });
-        timer_on_next.borrow_mut().take();
+        timer_on_next.set_value(None);
         if game
             .get()
             .as_ref()
@@ -96,14 +98,14 @@ pub fn App() -> impl IntoView {
         {
             start_timer(&timer_on_next, set_game);
         }
-    });
+    };
 
-    let timer_on_reset = timer.clone();
-    let on_new_game = Rc::new(move || {
-        timer_on_reset.borrow_mut().take();
+    let timer_on_reset = timer;
+    let on_new_game = move || {
+        timer_on_reset.set_value(None);
         set_game.set(None);
         set_setup_error.set(None);
-    });
+    };
 
     view! {
         <main class="app-shell">
