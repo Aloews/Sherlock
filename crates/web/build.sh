@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- -- "$0")" && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 RUST_TOOLCHAIN="1.100.0"
 TRUNK_VERSION="0.22.1"
 TRUNK_SHA256="2ab8d548fd5ed9cda50906f61fd8654204e7893bd52ebbfd90533862b7d71ee1"
-ARCHIVE="$RUNNER_TEMP/trunk-x86_64-unknown-linux-gnu.tar.gz"
-
-if [[ -z "${RUNNER_TEMP:-}" ]]; then
-  ARCHIVE="${TMPDIR:-/tmp}/trunk-x86_64-unknown-linux-gnu.tar.gz"
-fi
+TEMP_DIR="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
+ARCHIVE="$TEMP_DIR/trunk-x86_64-unknown-linux-gnu.tar.gz"
 
 if ! command -v rustup >/dev/null 2>&1; then
   curl --proto '=https' --tlsv1.2 --retry 3 --retry-connrefused -fsSL \
