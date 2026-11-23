@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/api",
     "crates/game-core",
+    "crates/dynasty-core",
     "crates/web",
 ]
 
