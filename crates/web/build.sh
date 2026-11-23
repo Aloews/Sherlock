@@ -6,9 +6,9 @@ cd "$SCRIPT_DIR"
 
 RUST_TOOLCHAIN="1.100.0"
 TRUNK_VERSION="0.22.1"
-TRUNK_SHA256="2ab8d548fd5ed9cda50906f61fd8654204e7893bd52ebbfd90533862b7d71ee1"
+TRUNK_SHA256="a1fe5cd6b053f5a76f66b598d296022a7f06f56def6013cc16cd6897d53f5363"
 TEMP_DIR="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
-ARCHIVE="$TEMP_DIR/trunk-x86_64-unknown-linux-gnu.tar.gz"
+ARCHIVE="$TEMP_DIR/trunk-x86_64-unknown-linux-musl.tar.gz"
 
 if ! command -v rustup >/dev/null 2>&1; then
   curl --proto '=https' --tlsv1.2 --retry 3 --retry-connrefused -fsSL \
@@ -22,7 +22,7 @@ export RUSTUP_TOOLCHAIN="$RUST_TOOLCHAIN"
 
 mkdir -p "$HOME/.cargo/bin" "${TMPDIR:-/tmp}/sherlock-trunk"
 curl --fail --location --retry 3 --silent --show-error \
-  "https://github.com/trunk-rs/trunk/releases/download/v${TRUNK_VERSION}/trunk-x86_64-unknown-linux-gnu.tar.gz" \
+  "https://github.com/trunk-rs/trunk/releases/download/v${TRUNK_VERSION}/trunk-x86_64-unknown-linux-musl.tar.gz" \
   --output "$ARCHIVE"
 echo "$TRUNK_SHA256  $ARCHIVE" | sha256sum --check
 tar -xzf "$ARCHIVE" -C "${TMPDIR:-/tmp}/sherlock-trunk"
