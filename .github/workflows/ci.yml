@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -21,10 +22,18 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
+      - name: Check agent patch policy
+        run: python3 -m unittest discover -s .github/scripts -p 'test_rust_agent_network.py' -v
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Run Clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Run tests
         run: cargo test --workspace --all-targets
+      - name: Check web client for WebAssembly
+        if: hashFiles('crates/web/Cargo.toml') != ''
+        run: cargo check -p sherlock-web --target wasm32-unknown-unknown
+      - name: Release build
+        run: cargo build --release --workspace
