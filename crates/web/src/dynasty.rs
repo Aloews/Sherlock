@@ -69,7 +69,6 @@ where
 struct CampaignSummary {
     id: String,
     name: String,
-    mode: String,
     status: String,
     current_year: i32,
     game_date: String,
@@ -77,7 +76,6 @@ struct CampaignSummary {
 
 #[derive(Clone, Debug, Deserialize)]
 struct Character {
-    id: String,
     full_name: String,
     age: i32,
     life_status: String,
@@ -86,33 +84,25 @@ struct Character {
 
 #[derive(Clone, Debug, Deserialize)]
 struct Dynasty {
-    id: String,
     name: String,
-    head_character_id: String,
     prestige: i32,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 struct Club {
-    id: String,
     name: String,
-    city: String,
     reputation: i32,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 struct CashAccount {
-    id: String,
     name: String,
-    account_type: String,
     currency: String,
     balance_minor: i64,
 }
 
 #[derive(Clone, Debug, Deserialize)]
 struct ChronicleEntry {
-    id: String,
-    event_type: String,
     title: String,
     game_year: i32,
 }
@@ -131,8 +121,6 @@ struct CampaignView {
 
 #[derive(Clone, Debug, Deserialize)]
 struct SeasonFixture {
-    id: String,
-    season_year: i32,
     matchday: i32,
     match_date: String,
     home_team: String,
@@ -164,7 +152,6 @@ struct SeasonView {
 #[derive(Clone, Debug, Deserialize)]
 struct GameEvent {
     id: String,
-    event_type: String,
     title: String,
     body: String,
     game_date: String,
@@ -185,10 +172,7 @@ struct CampaignCreated {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-struct EmptyResponse {
-    #[serde(default)]
-    status: String,
-}
+struct EmptyResponse {}
 
 #[derive(Serialize)]
 struct CreateCampaignBody<'a> {
