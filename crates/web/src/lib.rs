@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use sherlock_game_core::{bundled_cards, Game, GameError, GamePhase, GameSettings};
+use sherlock_game_core::{Game, GameError, GamePhase, GameSettings, bundled_cards};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -12,10 +12,7 @@ type TimerHandle = Interval;
 #[cfg(not(target_arch = "wasm32"))]
 type TimerHandle = ();
 
-fn start_timer(
-    timer: &Rc<RefCell<Option<TimerHandle>>>,
-    set_game: WriteSignal<Option<Game>>,
-) {
+fn start_timer(timer: &Rc<RefCell<Option<TimerHandle>>>, set_game: WriteSignal<Option<Game>>) {
     #[cfg(target_arch = "wasm32")]
     {
         let interval = Interval::new(1_000, move || {
@@ -36,8 +33,7 @@ fn start_timer(
 
 #[cfg(target_arch = "wasm32")]
 fn random_seed() -> u64 {
-    (js_sys::Date::now() as u64)
-        ^ ((js_sys::Math::random() * u64::MAX as f64) as u64)
+    (js_sys::Date::now() as u64) ^ ((js_sys::Math::random() * u64::MAX as f64) as u64)
 }
 
 #[cfg(not(target_arch = "wasm32"))]
