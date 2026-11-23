@@ -119,9 +119,6 @@ pub fn App() -> impl IntoView {
 
             <section class="main-content">
                 {move || {
-                    let on_start = on_start.clone();
-                    let on_next_round = on_next_round.clone();
-                    let on_new_game = on_new_game.clone();
                     match game.get() {
                         None => view! {
                             <section class="setup-screen">
