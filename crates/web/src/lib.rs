@@ -45,22 +45,6 @@ fn random_seed() -> u64 {
     20_261_123
 }
 
-fn category_name(category: &str) -> &'static str {
-    match category {
-        "player" => "Игроки",
-        "club" => "Клубы",
-        "coach" => "Тренеры",
-        "stadium" => "Стадионы",
-        "term" => "Термины",
-        "commentator" => "Комментаторы",
-        "referee" => "Судьи",
-        "woman" => "Женский футбол",
-        "position" => "Игровые позиции",
-        "club_nickname" => "Прозвища клубов",
-        _ => "Все категории",
-    }
-}
-
 #[component]
 pub fn App() -> impl IntoView {
     let (game, set_game) = signal::<Option<Game>>(None);
@@ -296,9 +280,7 @@ pub fn App() -> impl IntoView {
                                         </div>
                                         <div class="card-bottom">
                                             <span>"КАРТОЧКА " {move || {
-                                                let total = game.get().map(|g| g.remaining_cards()).unwrap_or(0);
-                                                let seen = 2_145usize.saturating_sub(total).saturating_add(1);
-                                                format!("{seen}")
+                                                game.get().map(|g| format!("{} / {}", g.card_number(), g.total_cards())).unwrap_or_default()
                                             }}</span>
                                             <span>"SHERLOCK / ALIAS"</span>
                                         </div>
@@ -415,14 +397,3 @@ pub fn mount_app() {
     leptos::mount::mount_to_body(App);
 }
 
-#[cfg(test)]
-mod tests {
-    use super::category_name;
-
-    #[test]
-    fn visible_category_labels_are_defined_for_game_filters() {
-        assert_eq!(category_name("player"), "Игроки");
-        assert_eq!(category_name("club"), "Клубы");
-        assert_eq!(category_name("unknown"), "Все категории");
-    }
-}
