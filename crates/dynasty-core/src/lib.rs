@@ -465,8 +465,9 @@ impl Campaign {
         self.last_training_day = Some(self.game_day);
         self.change_balance(-cost, format!("Тренировка: {}", focus.label()));
         let mut improved = 0;
+        let facility_level = self.club.training_facility;
         for player in &mut self.club.players {
-            if player.train(focus, self.club.training_facility) {
+            if player.train(focus, facility_level) {
                 improved += 1;
             }
             player.injury_days = player.injury_days.saturating_sub(1);
@@ -575,7 +576,7 @@ impl Campaign {
         self.game_day += 7;
         self.pay_weekly_wages();
         self.club.reputation = (i16::from(self.club.reputation) + 1).clamp(0, 100) as u8;
-        let user_fixture = played.iter().find(|(title, _)| title.contains(&self.club.name));
+        let user_fixture = played.iter().find(|(title, _)| title.contains(&self.club.name)).cloned();
         if let Some((title, score)) = user_fixture {
             self.record_event("Матч завершён", format!("{title}: {}:{}. Турнирная таблица обновлена.", score.home, score.away));
         }
