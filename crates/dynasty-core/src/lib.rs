@@ -55,6 +55,8 @@ pub struct Player {
     pub morale: u8,
     pub injury_days: u8,
     pub suspension_matches: u8,
+    #[serde(default)]
+    pub yellow_cards: u8,
     pub contract_days: u16,
     pub wage: u32,
     pub appearances: u16,
@@ -517,7 +519,10 @@ impl Campaign {
                 .iter()
                 .filter_map(|id| self.club.players.iter().find(|player| player.id == *id))
                 .filter(|player| player.position == position)
-                .min_by_key(|player| player.overall())
+                .min_by_key(|player| (
+                    player.injury_days == 0 && player.suspension_matches == 0,
+                    player.overall(),
+                ))
                 .map(|player| player.id);
             if let Some(weakest_id) = weakest {
                 if let Some(index) = self
@@ -680,6 +685,25 @@ impl Campaign {
             return Err(DynastyError::SeasonComplete);
         }
 
+        let unavailable_starter = self.club.starting_xi.iter().any(|player_id| {
+            self.club
+                .players
+                .iter()
+                .find(|player| player.id == *player_id)
+                .map(|player| player.injury_days > 7 || player.suspension_matches > 0)
+                .unwrap_or(true)
+        });
+        if unavailable_starter {
+            return Err(DynastyError::PlayerUnavailable);
+        }
+
+        // The next matchday is seven game-days later. Recover the squad and
+        // serve existing bans before applying incidents from the new match.
+        for player in &mut self.club.players {
+            player.injury_days = player.injury_days.saturating_sub(7);
+            player.suspension_matches = player.suspension_matches.saturating_sub(1);
+        }
+
         let mut played = Vec::with_capacity(fixtures.len());
         for fixture in fixtures {
             let home_rating = self.team_strength(fixture.home_team);
@@ -710,7 +734,6 @@ impl Campaign {
         let elapsed_years = self.game_day / 365 - previous_day / 365;
         self.advance_family_and_player_ages(elapsed_years);
         for player in &mut self.club.players {
-            player.injury_days = player.injury_days.saturating_sub(7);
             player.contract_days = player.contract_days.saturating_sub(7);
         }
         self.pay_weekly_wages();
@@ -751,6 +774,7 @@ impl Campaign {
             self.matchday = 1;
             for player in &mut self.club.players {
                 player.fitness = player.fitness.saturating_add(20).min(100);
+                player.yellow_cards = 0;
             }
             self.fixtures = season_fixtures();
             self.transfer_market = generate_market(&mut self.seed);
@@ -871,11 +895,62 @@ impl Campaign {
                 } else {
                     player.morale.saturating_sub(2)
                 };
-                if player.suspension_matches > 0 {
-                    player.suspension_matches -= 1;
+            }
+        }
+
+        let mut incidents = Vec::new();
+        for player_id in self.club.starting_xi.clone() {
+            if let Some(player) = self
+                .club
+                .players
+                .iter_mut()
+                .find(|player| player.id == player_id)
+            {
+                let injury_roll =
+                    match_incident_roll(self.seed, fixture.id, player_id, INJURY_ROLL_SALT);
+                let fatigue_risk = u64::from(100_u8.saturating_sub(player.fitness)) * 15;
+                let age_risk = u64::from(player.age.saturating_sub(28)) * 35;
+                let injury_threshold = (100 + fatigue_risk + age_risk).min(900);
+                if injury_roll % 10_000 < injury_threshold {
+                    let duration = 7 + ((injury_roll / 10_000) % 4) as u8 * 7;
+                    player.injury_days = duration;
+                    incidents.push((
+                        "Травма".to_string(),
+                        format!("{} выбыл на {} дней.", player.name, duration),
+                    ));
+                }
+
+                let discipline_roll =
+                    match_incident_roll(self.seed, fixture.id, player_id, DISCIPLINE_ROLL_SALT)
+                        % 10_000;
+                if discipline_roll < RED_CARD_THRESHOLD {
+                    player.suspension_matches = player.suspension_matches.max(2);
+                    incidents.push((
+                        "Удаление".to_string(),
+                        format!("{} получил красную карточку и пропустит 2 матча.", player.name),
+                    ));
+                } else if discipline_roll < YELLOW_CARD_THRESHOLD {
+                    player.yellow_cards = player.yellow_cards.saturating_add(1);
+                    if player.yellow_cards >= 5 {
+                        player.yellow_cards = 0;
+                        player.suspension_matches = player.suspension_matches.max(1);
+                        incidents.push((
+                            "Дисквалификация".to_string(),
+                            format!("{} пропустит следующий матч после пятой жёлтой карточки.", player.name),
+                        ));
+                    } else {
+                        incidents.push((
+                            "Жёлтая карточка".to_string(),
+                            format!("{} получил предупреждение ({}/5 за сезон).", player.name, player.yellow_cards),
+                        ));
+                    }
                 }
             }
         }
+        for (title, detail) in incidents {
+            self.record_event(&title, detail);
+        }
+
         let user_goals = if fixture.home_team == 0 {
             score.home
         } else {
@@ -1056,6 +1131,7 @@ fn make_player(
         morale: 65,
         injury_days: 0,
         suspension_matches: 0,
+        yellow_cards: 0,
         contract_days: 730,
         wage: u32::from(base).saturating_mul(85),
         appearances: 0,
@@ -1134,6 +1210,22 @@ fn simulate_score(seed: u64, fixture_id: u32, home_rating: i16, away_rating: i16
         }
     }
     Score { home, away }
+}
+
+const INJURY_ROLL_SALT: u64 = 0xA076_1D64_78BD_642F;
+const DISCIPLINE_ROLL_SALT: u64 = 0xE703_7ED1_A0B4_28DB;
+const RED_CARD_THRESHOLD: u64 = 40;
+const YELLOW_CARD_THRESHOLD: u64 = 2_200;
+
+fn match_incident_roll(seed: u64, fixture_id: u32, player_id: u32, salt: u64) -> u64 {
+    let mut state = seed
+        ^ u64::from(fixture_id).wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        ^ u64::from(player_id).wrapping_mul(0xBF58_476D_1CE4_E5B9)
+        ^ salt;
+    if state == 0 {
+        state = 0x8EBC_6AF0_9C88_C6E3;
+    }
+    next(&mut state)
 }
 
 fn next(seed: &mut u64) -> u64 {
