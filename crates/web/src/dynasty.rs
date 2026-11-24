@@ -333,7 +333,7 @@ pub fn DynastyApp() -> impl IntoView {
                                                                     if let Some(mut updated) = campaign.get() {
                                                                         match updated.select_player(player_id) {
                                                                             Ok(()) => save_and_set(updated, set_campaign, set_notice),
-                                                                            Err(error) => set_notice.set(Some(error.to_string())),
+                                                                            Err(error) => Err(error.to_string()),
                                                                         }
                                                                     }
                                                                 }>
@@ -399,7 +399,7 @@ pub fn DynastyApp() -> impl IntoView {
                                                                 if let Some(mut updated) = campaign.get() {
                                                                     match updated.sign_player(id) {
                                                                         Ok(()) => save_and_set(updated, set_campaign, set_notice),
-                                                                        Err(error) => set_notice.set(Some(error.to_string())),
+                                                                        Err(error) => Err(error.to_string()),
                                                                     }
                                                                 }
                                                             }>"Подписать"</button>
@@ -440,7 +440,7 @@ pub fn DynastyApp() -> impl IntoView {
                                                                     if let Some(mut updated) = campaign.get() {
                                                                         match updated.retire_to_heir(heir_id) {
                                                                             Ok(()) => save_and_set(updated, set_campaign, set_notice),
-                                                                            Err(error) => set_notice.set(Some(error.to_string())),
+                                                                            Err(error) => Err(error.to_string()),
                                                                         }
                                                                     }
                                                                 }>"Передать управление"</button>
@@ -499,7 +499,7 @@ pub fn DynastyApp() -> impl IntoView {
                                                                 if let Some(mut updated) = campaign.get() {
                                                                     match updated.upgrade_training_facility() {
                                                                         Ok(()) => save_and_set(updated, set_campaign, set_notice),
-                                                                        Err(error) => set_notice.set(Some(error.to_string())),
+                                                                        Err(error) => Err(error.to_string()),
                                                                     }
                                                                 }
                                                             }"Улучшить"</button>
