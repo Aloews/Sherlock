@@ -268,25 +268,28 @@ def generate_next_task(backlog: dict[str, object], state: dict[str, object]) -> 
     raise RuntimeError("Planner could not produce a valid, non-duplicate task")
 
 
+def qualifies_for_agent(event_run: dict[str, object]) -> bool:
+    branch = str(event_run.get("head_branch", ""))
+    event = str(event_run.get("event", ""))
+    conclusion = str(event_run.get("conclusion", ""))
+    if branch == "main":
+        return event == "push" and conclusion == "success"
+    return branch == BRANCH and event == "workflow_dispatch" and conclusion in ("success", "failure")
+
+
 def ensure_branch(event_run: dict[str, object]) -> bool:
     branch = str(event_run.get("head_branch", ""))
     sha = str(event_run.get("head_sha", ""))
-    conclusion = str(event_run.get("conclusion", ""))
     if command(["git", "rev-parse", "HEAD"]).stdout.strip() != sha:
         raise RuntimeError("Checked-out commit does not match the completed CI run")
+    if not qualifies_for_agent(event_run):
+        return False
     if branch == "main":
-        message = str((event_run.get("head_commit") or {}).get("message", ""))
-        if conclusion != "success" or not message.startswith("[agent-bootstrap]"):
-            return False
         exists = command(["git", "ls-remote", "--heads", "origin", BRANCH]).stdout.strip()
         if exists:
             return False
         command(["git", "switch", "-c", BRANCH])
         return True
-    if branch != BRANCH or event_run.get("event") != "workflow_dispatch":
-        return False
-    if conclusion not in ("success", "failure"):
-        return False
     remote = command(["git", "ls-remote", "origin", f"refs/heads/{BRANCH}"]).stdout.split()
     if not remote or remote[0] != sha:
         return False

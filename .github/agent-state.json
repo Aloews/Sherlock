@@ -1,7 +1,9 @@
 {
   "version": 1,
   "iterations": 0,
-  "completed_ids": [],
+  "completed_ids": [
+    "WEB-001"
+  ],
   "active_task": null,
   "repair_attempts": 0,
   "paused": false,

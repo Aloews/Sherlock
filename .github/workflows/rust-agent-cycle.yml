@@ -44,14 +44,14 @@ jobs:
           run = event.get("workflow_run", {})
           branch = run.get("head_branch")
           conclusion = run.get("conclusion")
-          message = (run.get("head_commit") or {}).get("message", "")
+          event_name = run.get("event")
           qualifies = (
               branch == "main"
+              and event_name == "push"
               and conclusion == "success"
-              and message.startswith("[agent-bootstrap]")
           ) or (
               branch == "agents/rust-autonomy"
-              and run.get("event") == "workflow_dispatch"
+              and event_name == "workflow_dispatch"
               and conclusion in ("success", "failure")
           )
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
