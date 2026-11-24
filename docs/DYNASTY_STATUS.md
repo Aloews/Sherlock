@@ -47,3 +47,16 @@ Do not call the mode production-ready until the exact candidate SHA passes:
 - browser storage corruption/recovery and real-device responsive checks
 
 Each gate proves only its own layer. A successful build is not proof of a working deployed career.
+
+# Domain boundary: Football within the wider Sherlock world
+
+Football Dynasty is a specialized domain module, not the definition of the entire Sherlock simulation. The long-term product direction is specified in [HISTORICAL_WORLD_SIMULATION.md](HISTORICAL_WORLD_SIMULATION.md).
+
+In a future integrated world, football may interact with shared systems for population and labor, education and youth development, health and medicine, facilities and construction, energy and transport, finance and credit, media and broadcasting, law and regulation, politics and culture. These integrations are future work; they are not present in the current local career slice.
+
+Keep three kinds of data separate:
+1. Real-world football reference facts (with source and temporal provenance).
+2. Fictional Football Dynasty campaign entities and outcomes.
+3. Historical or generated whole-world simulation state.
+
+A real-world club or player record must not be silently rewritten by a generated campaign. An alternate-history scenario may intentionally branch from reference facts, but the branch must be labelled as simulation. Football-specific rules should consume shared world concepts where appropriate rather than create competing definitions of money, population, time, geography or institutions.
