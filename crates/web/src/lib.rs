@@ -231,19 +231,35 @@ pub fn App() -> impl IntoView {
 
     #[cfg(target_arch = "wasm32")]
     {
-        let window = web_sys::window().expect("browser window is available");
-        let listener_window = window.clone();
-        let listener = wasm_bindgen::closure::Closure::<dyn FnMut(web_sys::Event)>::new(move |_| {
-            set_active_route.set(current_route());
-        });
+        let listener_slot = StoredValue::new_local(
+            None::<wasm_bindgen::closure::Closure<dyn FnMut(web_sys::Event)>>,
+        );
+        let listener = wasm_bindgen::closure::Closure::<dyn FnMut(web_sys::Event)>::new(
+            move |_| set_active_route.set(current_route()),
+        );
         let callback = listener
             .as_ref()
             .unchecked_ref::<js_sys::Function>()
             .clone();
-        let _ = window.add_event_listener_with_callback("hashchange", &callback);
+        if let Some(window) = web_sys::window() {
+            let _ = window.add_event_listener_with_callback("hashchange", &callback);
+        }
+        listener_slot.set_value(Some(listener));
+
+        let listener_on_cleanup = listener_slot;
         on_cleanup(move || {
-            let _ = listener_window.remove_event_listener_with_callback("hashchange", &callback);
-            drop(listener);
+            let callback = listener_on_cleanup.with_value(|stored| {
+                stored.as_ref().map(|listener| {
+                    listener
+                        .as_ref()
+                        .unchecked_ref::<js_sys::Function>()
+                        .clone()
+                })
+            });
+            if let (Some(window), Some(callback)) = (web_sys::window(), callback) {
+                let _ = window.remove_event_listener_with_callback("hashchange", &callback);
+            }
+            listener_on_cleanup.set_value(None);
         });
     }
 
