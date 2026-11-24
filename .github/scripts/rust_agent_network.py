@@ -288,10 +288,10 @@ def model_patch(task: dict[str, object], plan: str, context: str, feedback: str 
     )
     user = task_details(task) + "\n\nIMPLEMENTATION PLAN:\n" + plan + "\n\nCURRENT FILES:\n" + context
     if feedback:
-        user += "\n\nPREVIOUS ATTEMPT FEEDBACK. Correct these issues in a fresh patch:\n" + feedback[-12000:]
+        user += "\n\nPREVIOUS ATTEMPT FEEDBACK. Correct these issues in a fresh patch:\n" + feedback[-2500:]
     answer = request_model(
         [{"role": "system", "content": system}, {"role": "user", "content": user}],
-        2200,
+        1600,
     )
     start = answer.find("diff --git ")
     return answer[start:] if start >= 0 else ""
