@@ -81,6 +81,10 @@ impl Player {
         }
     }
 
+    pub fn renewal_cost(&self) -> u32 {
+        self.wage.saturating_mul(4).max(10_000)
+    }
+
     pub fn market_value(&self) -> u32 {
         let rating = u32::from(self.overall());
         let age_factor = if self.age <= 23 {
@@ -94,7 +98,7 @@ impl Player {
     }
 
     fn train(&mut self, focus: TrainingFocus, facility_level: u8) -> bool {
-        if self.injury_days > 0 || self.suspension_matches > 0 {
+        if self.injury_days > 0 || self.suspension_matches > 0 || self.contract_days == 0 {
             self.fitness = self.fitness.saturating_add(1).min(100);
             return false;
         }
@@ -282,6 +286,7 @@ pub struct Campaign {
 pub enum DynastyError {
     InvalidName,
     InvalidAge,
+    ContractNotExpiring,
     SquadTooSmall,
     SquadTooLarge,
     PlayerNotFound,
@@ -305,6 +310,7 @@ impl fmt::Display for DynastyError {
         let message = match self {
             Self::InvalidName => "Укажите имя и название клуба",
             Self::InvalidAge => "Возраст должен быть от 16 до 100 лет",
+            Self::ContractNotExpiring => "Продление доступно за 90 дней до окончания контракта",
             Self::SquadTooSmall => "В команде недостаточно игроков",
             Self::SquadTooLarge => "В команде достигнут лимит игроков",
             Self::PlayerNotFound => "Игрок не найден",
@@ -490,7 +496,10 @@ impl Campaign {
             .iter()
             .find(|player| player.id == player_id)
             .ok_or(DynastyError::PlayerNotFound)?;
-        if candidate.injury_days > 0 || candidate.suspension_matches > 0 {
+        if candidate.injury_days > 0
+            || candidate.suspension_matches > 0
+            || candidate.contract_days == 0
+        {
             return Err(DynastyError::PlayerUnavailable);
         }
         if self.is_starter(player_id) {
@@ -520,7 +529,9 @@ impl Campaign {
                 .filter_map(|id| self.club.players.iter().find(|player| player.id == *id))
                 .filter(|player| player.position == position)
                 .min_by_key(|player| (
-                    player.injury_days == 0 && player.suspension_matches == 0,
+                    player.injury_days == 0
+                        && player.suspension_matches == 0
+                        && player.contract_days > 0,
                     player.overall(),
                 ))
                 .map(|player| player.id);
@@ -616,6 +627,35 @@ impl Campaign {
         Ok(())
     }
 
+    pub fn renew_contract(&mut self, player_id: u32) -> Result<u32, DynastyError> {
+        let index = self
+            .club
+            .players
+            .iter()
+            .position(|player| player.id == player_id)
+            .ok_or(DynastyError::PlayerNotFound)?;
+        let player = &self.club.players[index];
+        if player.contract_days > 90 {
+            return Err(DynastyError::ContractNotExpiring);
+        }
+
+        let cost = player.renewal_cost();
+        if self.club.cash < i64::from(cost) {
+            return Err(DynastyError::InsufficientFunds);
+        }
+        let player_name = player.name.clone();
+        self.club.players[index].contract_days = 730;
+        self.change_balance(
+            -i64::from(cost),
+            format!("Продление контракта: {player_name}"),
+        );
+        self.record_event(
+            "Контракт продлён",
+            format!("{player_name} подписал новое соглашение ещё на 730 дней."),
+        );
+        Ok(cost)
+    }
+
     pub fn sell_player(&mut self, player_id: u32) -> Result<u32, DynastyError> {
         if self.is_starter(player_id) {
             return Err(DynastyError::CannotSellStarter);
@@ -690,7 +730,11 @@ impl Campaign {
                 .players
                 .iter()
                 .find(|player| player.id == *player_id)
-                .map(|player| player.injury_days > 7 || player.suspension_matches > 0)
+                .map(|player| {
+                    player.injury_days > 7
+                        || player.suspension_matches > 0
+                        || player.contract_days == 0
+                })
                 .unwrap_or(true)
         });
         if unavailable_starter {
@@ -733,10 +777,10 @@ impl Campaign {
         self.game_day += 7;
         let elapsed_years = self.game_day / 365 - previous_day / 365;
         self.advance_family_and_player_ages(elapsed_years);
+        self.pay_weekly_wages();
         for player in &mut self.club.players {
             player.contract_days = player.contract_days.saturating_sub(7);
         }
-        self.pay_weekly_wages();
         self.club.reputation = (i16::from(self.club.reputation) + 1).clamp(0, 100) as u8;
         let user_fixture = played
             .iter()
@@ -1039,6 +1083,7 @@ impl Campaign {
             .club
             .players
             .iter()
+            .filter(|player| player.contract_days > 0)
             .map(|player| i64::from(player.wage))
             .sum::<i64>();
         let sponsor = 80_000 + i64::from(self.club.reputation) * 1_000;
@@ -1092,6 +1137,7 @@ fn best_lineup(players: &[Player], formation: Formation) -> Vec<u32> {
                 player.position == position
                     && player.injury_days == 0
                     && player.suspension_matches == 0
+                    && player.contract_days > 0
             })
             .collect();
         candidates.sort_by_key(|player| std::cmp::Reverse(player.overall()));
@@ -1262,6 +1308,65 @@ mod tests {
         let restored: Campaign = serde_json::from_value(value).unwrap();
         assert!(restored.club.players.iter().all(|player| player.yellow_cards == 0));
         restored.validate().unwrap();
+    }
+
+    #[test]
+    fn expired_contract_players_are_not_selected_or_paid_until_renewed() {
+        let mut campaign = new_campaign();
+        let player_id = campaign.club.starting_xi[0];
+        let player_index = campaign.club.players.iter().position(|player| player.id == player_id).unwrap();
+        campaign.club.players[player_index].contract_days = 0;
+        let formation = campaign.club.tactics.formation;
+        campaign.set_formation(formation);
+        assert!(!campaign.is_starter(player_id));
+        assert_eq!(
+            campaign.select_player(player_id),
+            Err(DynastyError::PlayerUnavailable)
+        );
+
+        let expected_wages = campaign.club.players.iter()
+            .filter(|player| player.contract_days > 0)
+            .map(|player| i64::from(player.wage))
+            .sum::<i64>();
+        let expected_sponsor = 80_000 + i64::from(campaign.club.reputation) * 1_000;
+        let cash_before = campaign.club.cash;
+        campaign.pay_weekly_wages();
+        assert_eq!(campaign.club.cash, cash_before - expected_wages + expected_sponsor);
+
+        let renewal_cost = campaign.club.players[player_index].renewal_cost();
+        assert_eq!(campaign.renew_contract(player_id), Ok(renewal_cost));
+        assert_eq!(campaign.club.players[player_index].contract_days, 730);
+        campaign.select_player(player_id).unwrap();
+        assert!(campaign.is_starter(player_id));
+    }
+
+    #[test]
+    fn contract_renewal_is_limited_to_the_final_90_days_and_checks_funds() {
+        let mut campaign = new_campaign();
+        let player_id = campaign.club.starting_xi[0];
+        let player_index = campaign.club.players.iter().position(|player| player.id == player_id).unwrap();
+        campaign.club.players[player_index].contract_days = 91;
+        let cash_before = campaign.club.cash;
+        let ledger_before = campaign.ledger.len();
+
+        assert_eq!(
+            campaign.renew_contract(player_id),
+            Err(DynastyError::ContractNotExpiring)
+        );
+        assert_eq!(campaign.club.cash, cash_before);
+        assert_eq!(campaign.ledger.len(), ledger_before);
+        assert_eq!(campaign.club.players[player_index].contract_days, 91);
+
+        campaign.club.players[player_index].contract_days = 90;
+        campaign.club.cash = 0;
+        let ledger_before = campaign.ledger.len();
+        assert_eq!(
+            campaign.renew_contract(player_id),
+            Err(DynastyError::InsufficientFunds)
+        );
+        assert_eq!(campaign.club.cash, 0);
+        assert_eq!(campaign.ledger.len(), ledger_before);
+        assert_eq!(campaign.club.players[player_index].contract_days, 90);
     }
 
     #[test]
