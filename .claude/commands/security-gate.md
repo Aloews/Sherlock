@@ -1,0 +1,2 @@
+# Security gate
+Review changed code and affected runtime for authentication/authorization, sessions/secrets, injection, SSRF, DNS rebinding, path traversal, unsafe deserialization, CORS/CSRF/CSP, rate limits, RLS/tenant isolation, sensitive logging, dependencies and CI supply chain. For each finding provide severity, path, reachable exploit scenario, fix and regression test. Run available scanners without printing secrets. Do not modify production or weaken controls. State what was not inspected.
