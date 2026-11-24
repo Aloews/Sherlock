@@ -307,7 +307,7 @@ pub fn DynastyApp() -> impl IntoView {
                                                 </select>
                                             </label>
                                         </div>
-                                        <p class="dynasty-hint">"В стартовом составе 11 игроков. Выберите игрока из резерва, чтобы заменить футболиста на той же позиции."</p>
+                                        <p class="dynasty-hint">"В стартовом составе 11 игроков. Выберите резервиста для замены; контракт можно продлить за 90 дней до истечения, стоимость — четыре недельных оклада."</p>
                                         <div class="dynasty-roster">
                                             {move || campaign.get().map(|save| {
                                                 let mut players = save.club.players.clone();
@@ -315,29 +315,65 @@ pub fn DynastyApp() -> impl IntoView {
                                                 players.into_iter().map(|player| {
                                                     let player_id = player.id;
                                                     let starter = save.club.starting_xi.contains(&player_id);
-                                                    let unavailable = player.injury_days > 0 || player.suspension_matches > 0;
-                                                    let availability_detail = if player.injury_days > 0 {
+                                                    let unavailable = player.injury_days > 0
+                                                        || player.suspension_matches > 0
+                                                        || player.contract_days == 0;
+                                                    let availability_detail = if player.contract_days == 0 {
+                                                        "Контракт истёк".to_string()
+                                                    } else if player.injury_days > 0 {
                                                         format!("Травма · {} дн.", player.injury_days)
                                                     } else if player.suspension_matches > 0 {
                                                         format!("Дисквалификация · {} матч.", player.suspension_matches)
                                                     } else {
                                                         "Доступен".to_string()
                                                     };
+                                                    let contract_detail = if player.contract_days == 0 {
+                                                        "Контракт истёк".to_string()
+                                                    } else if player.contract_days <= 90 {
+                                                        format!("Контракт истекает через {} дн.", player.contract_days)
+                                                    } else {
+                                                        format!("Контракт · {} дн.", player.contract_days)
+                                                    };
                                                     let discipline_detail = if player.yellow_cards > 0 {
                                                         format!(" · ЖК {}/5", player.yellow_cards)
                                                     } else {
                                                         String::new()
+                                                    };
+                                                    let can_renew_contract = player.contract_days <= 90;
+                                                    let renewal_label = if player.contract_days == 0 {
+                                                        "Подписать"
+                                                    } else {
+                                                        "Продлить"
+                                                    };
+                                                    let renewal_text = if can_renew_contract {
+                                                        format!("{} · {}", renewal_label, money(i64::from(player.renewal_cost())))
+                                                    } else {
+                                                        format!("Продление через {} дн.", player.contract_days - 90)
                                                     };
                                                     view! {
                                                         <article class="dynasty-player-row">
                                                             <div class="dynasty-player-rating">{player.overall()}</div>
                                                             <div class="dynasty-player-main">
                                                                 <strong>{player.name.clone()}</strong>
-                                                                <span>{format!("{} · {} лет · потенциал {} · {}{}", player.position.label(), player.age, player.potential, availability_detail, discipline_detail)}</span>
+                                                                <span>{format!("{} · {} лет · потенциал {} · {} · {}{}", player.position.label(), player.age, player.potential, availability_detail, contract_detail, discipline_detail)}</span>
                                                             </div>
                                                             <div class="dynasty-player-career">
                                                                 <strong>{format!("{} гол.", player.goals)}</strong>
                                                                 <span>{format!("{} матчей", player.appearances)}</span>
+                                                                <button type="button" class="dynasty-mini-button"
+                                                                    disabled=!can_renew_contract
+                                                                    on:click=move |_| {
+                                                                        if let Some(mut updated) = campaign.get() {
+                                                                            match updated.renew_contract(player_id) {
+                                                                                Ok(_) => {
+                                                                                    let _ = save_and_set(updated, set_campaign, set_notice);
+                                                                                },
+                                                                                Err(error) => set_notice.set(Some(error.to_string())),
+                                                                            }
+                                                                        }
+                                                                    }>
+                                                                    {renewal_text}
+                                                                </button>
                                                             </div>
                                                             <button type="button" class="dynasty-mini-button"
                                                                 disabled=starter || unavailable
