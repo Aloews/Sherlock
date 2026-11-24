@@ -1,6 +1,8 @@
 #[cfg(target_arch = "wasm32")]
 use gloo_timers::callback::Interval;
 use leptos::prelude::*;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::JsCast;
 use sherlock_game_core::{Game, GamePhase, GameSettings, bundled_cards};
 mod dynasty;
 use dynasty::DynastyApp;
@@ -233,10 +235,13 @@ pub fn App() -> impl IntoView {
         let listener = wasm_bindgen::closure::Closure::<dyn FnMut(web_sys::Event)>::new(move |_| {
             set_active_route.set(current_route());
         });
-        let callback = listener.as_ref().unchecked_ref();
-        let _ = window.add_event_listener_with_callback("hashchange", callback);
+        let callback = listener
+            .as_ref()
+            .unchecked_ref::<js_sys::Function>()
+            .clone();
+        let _ = window.add_event_listener_with_callback("hashchange", &callback);
         on_cleanup(move || {
-            let _ = listener_window.remove_event_listener_with_callback("hashchange", callback);
+            let _ = listener_window.remove_event_listener_with_callback("hashchange", &callback);
             drop(listener);
         });
     }
