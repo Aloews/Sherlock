@@ -32,6 +32,45 @@ def new_file(path="crates/web/src/lib.rs"):
     )
 
 
+class AgentTriggerPolicyTests(unittest.TestCase):
+    def test_successful_main_push_bootstraps_agents(self):
+        self.assertTrue(MODULE.qualifies_for_agent({
+            "head_branch": "main",
+            "event": "push",
+            "conclusion": "success",
+        }))
+
+    def test_main_pull_request_success_does_not_bootstrap_agents(self):
+        self.assertFalse(MODULE.qualifies_for_agent({
+            "head_branch": "main",
+            "event": "pull_request",
+            "conclusion": "success",
+        }))
+
+    def test_failed_main_push_does_not_bootstrap_agents(self):
+        self.assertFalse(MODULE.qualifies_for_agent({
+            "head_branch": "main",
+            "event": "push",
+            "conclusion": "failure",
+        }))
+
+    def test_agent_branch_dispatch_can_advance_or_repair(self):
+        for conclusion in ("success", "failure"):
+            with self.subTest(conclusion=conclusion):
+                self.assertTrue(MODULE.qualifies_for_agent({
+                    "head_branch": "agents/rust-autonomy",
+                    "event": "workflow_dispatch",
+                    "conclusion": conclusion,
+                }))
+
+    def test_unrelated_branches_never_start_agents(self):
+        self.assertFalse(MODULE.qualifies_for_agent({
+            "head_branch": "feature/other",
+            "event": "push",
+            "conclusion": "success",
+        }))
+
+
 class AgentWritePolicyTests(unittest.TestCase):
     def test_rust_and_docs_paths_are_writable(self):
         for path in (
