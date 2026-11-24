@@ -1251,6 +1251,20 @@ mod tests {
     }
 
     #[test]
+    fn older_local_saves_default_new_player_discipline_fields() {
+        let campaign = new_campaign();
+        let mut value = serde_json::to_value(campaign).unwrap();
+        let players = value["club"]["players"].as_array_mut().unwrap();
+        for player in players {
+            player.as_object_mut().unwrap().remove("yellow_cards");
+        }
+
+        let restored: Campaign = serde_json::from_value(value).unwrap();
+        assert!(restored.club.players.iter().all(|player| player.yellow_cards == 0));
+        restored.validate().unwrap();
+    }
+
+    #[test]
     fn campaign_starts_with_complete_fictional_squad_and_schedule() {
         let campaign = new_campaign();
         assert_eq!(campaign.club.players.len(), 22);
