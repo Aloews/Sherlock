@@ -204,7 +204,7 @@ class AgentWritePolicyTests(unittest.TestCase):
 
     def test_architecture_contract_is_explicit(self):
         self.assertIn("Leptos 0.8", MODULE.ARCHITECTURE_CONTRACT)
-        self.assertIn("not in crates/web", MODULE.ARCHITECTURE_CONTRACT)
+        self.assertIn("Do not put Axum routers", MODULE.ARCHITECTURE_CONTRACT)
         self.assertIn("workspace manifest", MODULE.ARCHITECTURE_CONTRACT)
 
 
