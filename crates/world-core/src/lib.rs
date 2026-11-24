@@ -120,7 +120,10 @@ impl World {
     /// or arithmetic overflows, the world is left unchanged.
     pub fn advance_tick(&mut self) -> Result<(), WorldError> {
         let mut next = self.clone();
-        let next_tick = next.tick.checked_add(1).ok_or(WorldError::ArithmeticOverflow)?;
+        let next_tick = next
+            .tick
+            .checked_add(1)
+            .ok_or(WorldError::ArithmeticOverflow)?;
         let settlement_ids: Vec<EntityId> = next.settlements.keys().copied().collect();
 
         for settlement_id in settlement_ids {
@@ -181,7 +184,8 @@ impl World {
         }
 
         next.tick = next_tick;
-        next.event_log.push(WorldEvent::WorldAdvanced { tick: next_tick });
+        next.event_log
+            .push(WorldEvent::WorldAdvanced { tick: next_tick });
         *self = next;
         Ok(())
     }
@@ -235,11 +239,19 @@ mod tests {
         assert_eq!(town.deposits[&ResourceKind::Timber].stock, 22);
         assert!(world.event_log.iter().any(|event| matches!(
             event,
-            WorldEvent::FoodProduced { settlement_id: 7, amount: 8, .. }
+            WorldEvent::FoodProduced {
+                settlement_id: 7,
+                amount: 8,
+                ..
+            }
         )));
         assert!(world.event_log.iter().any(|event| matches!(
             event,
-            WorldEvent::FoodConsumed { settlement_id: 7, amount: 10, .. }
+            WorldEvent::FoodConsumed {
+                settlement_id: 7,
+                amount: 10,
+                ..
+            }
         )));
     }
 
@@ -251,7 +263,10 @@ mod tests {
 
         assert!(matches!(
             world.advance_tick(),
-            Err(WorldError::FoodShortage { settlement_id: 7, .. })
+            Err(WorldError::FoodShortage {
+                settlement_id: 7,
+                ..
+            })
         ));
         assert_eq!(world, before);
     }
