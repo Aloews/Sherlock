@@ -202,6 +202,11 @@ class AgentWritePolicyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "server-only"):
             MODULE.validate_architecture(patch, ["crates/web/Cargo.toml"])
 
+    def test_local_model_runtime_has_bounded_cpu_friendly_limits(self):
+        self.assertEqual(MODULE.MODEL, "qwen2.5-coder:3b")
+        self.assertEqual(MODULE.MODEL_CONTEXT_TOKENS, 6144)
+        self.assertEqual(MODULE.MODEL_REQUEST_TIMEOUT_SECONDS, 300)
+
     def test_architecture_contract_is_explicit(self):
         self.assertIn("Leptos 0.8", MODULE.ARCHITECTURE_CONTRACT)
         self.assertIn("Do not put Axum routers", MODULE.ARCHITECTURE_CONTRACT)

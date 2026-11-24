@@ -12,13 +12,13 @@ permissions:
 
 concurrency:
   group: rust-agent-${{ github.event.workflow_run.head_branch }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   agent:
     if: github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'agents/rust-autonomy'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 55
     steps:
       - name: Check out the exact CI commit
         uses: actions/checkout@v4
@@ -66,7 +66,7 @@ jobs:
             /usr/bin/ollama
             /usr/lib/ollama
             ~/.ollama/models
-          key: ollama-v0.40.17-qwen2.5-coder-7b-${{ runner.os }}
+          key: ollama-v0.40.17-qwen2.5-coder-3b-${{ runner.os }}
 
       - name: Install verified Ollama runtime when cache is absent
         if: steps.gate.outputs.run_agent == 'true'
@@ -92,7 +92,7 @@ jobs:
         if: steps.gate.outputs.run_agent == 'true'
         env:
           OLLAMA_HOST: 127.0.0.1:11434
-          AGENT_MODEL: qwen2.5-coder:7b
+          AGENT_MODEL: qwen2.5-coder:3b
         shell: bash
         run: |
           set -euo pipefail
@@ -124,8 +124,9 @@ jobs:
         if: steps.gate.outputs.run_agent == 'true'
         env:
           AGENT_MODE: ${{ github.event.workflow_run.conclusion == 'success' && 'advance' || 'repair' }}
-          AGENT_MODEL: qwen2.5-coder:7b
+          AGENT_MODEL: qwen2.5-coder:3b
           AGENT_FAILURE_LOG: ${{ runner.temp }}/rust-ci-failed.log
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+        timeout-minutes: 50
         run: python .github/scripts/rust_agent_network.py

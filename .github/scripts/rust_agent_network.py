@@ -12,7 +12,9 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-MODEL = os.environ.get("AGENT_MODEL", "qwen2.5-coder:7b")
+MODEL = os.environ.get("AGENT_MODEL", "qwen2.5-coder:3b")
+MODEL_CONTEXT_TOKENS = 6144
+MODEL_REQUEST_TIMEOUT_SECONDS = 300
 BRANCH = "agents/rust-autonomy"
 BACKLOG_PATH = Path(".github/agent-backlog.json")
 STATE_PATH = Path(".github/agent-state.json")
@@ -138,7 +140,7 @@ def request_model(messages: list[dict[str, str]], max_tokens: int) -> str:
         "model": MODEL,
         "stream": False,
         "messages": messages,
-        "options": {"temperature": 0.1, "num_ctx": 8192, "num_predict": max_tokens},
+        "options": {"temperature": 0.1, "num_ctx": MODEL_CONTEXT_TOKENS, "num_predict": max_tokens},
     }
     request = urllib.request.Request(
         "http://127.0.0.1:11434/api/chat",
@@ -146,7 +148,7 @@ def request_model(messages: list[dict[str, str]], max_tokens: int) -> str:
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=1800) as response:
+        with urllib.request.urlopen(request, timeout=MODEL_REQUEST_TIMEOUT_SECONDS) as response:
             data = json.loads(response.read())
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
         raise RuntimeError(f"Local model request failed: {exc}") from exc
