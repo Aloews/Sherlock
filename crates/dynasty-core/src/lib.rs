@@ -280,6 +280,10 @@ pub struct Campaign {
     pub chronicle: Vec<ChronicleEntry>,
     pub ledger: Vec<LedgerEntry>,
     pub last_training_day: Option<u32>,
+    #[serde(default)]
+    pub wage_remainder: u8,
+    #[serde(default)]
+    pub sponsor_remainder: u8,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -432,6 +436,8 @@ impl Campaign {
             chronicle: Vec::new(),
             ledger: Vec::new(),
             last_training_day: None,
+            wage_remainder: 0,
+            sponsor_remainder: 0,
         };
         campaign.club.starting_xi =
             best_lineup(&campaign.club.players, campaign.club.tactics.formation);
@@ -563,6 +569,7 @@ impl Campaign {
         self.game_day += 1;
         let elapsed_years = self.game_day / 365 - previous_day / 365;
         self.advance_family_and_player_ages(elapsed_years);
+        self.accrue_daily_cashflow();
         self.last_training_day = Some(self.game_day);
         self.change_balance(-cost, format!("Тренировка: {}", focus.label()));
         let mut improved = 0;
@@ -774,13 +781,15 @@ impl Campaign {
         }
 
         let previous_day = self.game_day;
-        self.game_day += 7;
+        for _ in 0..7 {
+            self.game_day += 1;
+            self.accrue_daily_cashflow();
+            for player in &mut self.club.players {
+                player.contract_days = player.contract_days.saturating_sub(1);
+            }
+        }
         let elapsed_years = self.game_day / 365 - previous_day / 365;
         self.advance_family_and_player_ages(elapsed_years);
-        self.pay_weekly_wages();
-        for player in &mut self.club.players {
-            player.contract_days = player.contract_days.saturating_sub(7);
-        }
         self.club.reputation = (i16::from(self.club.reputation) + 1).clamp(0, 100) as u8;
         let user_fixture = played
             .iter()
@@ -900,6 +909,8 @@ impl Campaign {
         }
         if self.club.starting_xi.len() != 11
             || self.club.starting_xi.iter().any(|id| !ids.contains(id))
+            || self.wage_remainder >= 7
+            || self.sponsor_remainder >= 7
         {
             return Err(DynastyError::InvalidSave);
         }
@@ -1078,17 +1089,28 @@ impl Campaign {
         }
     }
 
-    fn pay_weekly_wages(&mut self) {
-        let wages = self
+    fn accrue_daily_cashflow(&mut self) {
+        let weekly_wages = self
             .club
             .players
             .iter()
             .filter(|player| player.contract_days > 0)
             .map(|player| i64::from(player.wage))
             .sum::<i64>();
-        let sponsor = 80_000 + i64::from(self.club.reputation) * 1_000;
-        self.change_balance(-wages, "Зарплаты игроков за неделю".into());
-        self.change_balance(sponsor, "Спонсорский доход за неделю".into());
+        let wage_numerator = weekly_wages.saturating_add(i64::from(self.wage_remainder));
+        let daily_wages = wage_numerator / 7;
+        self.wage_remainder = (wage_numerator % 7) as u8;
+        if daily_wages > 0 {
+            self.change_balance(-daily_wages, "Зарплаты игроков за день".into());
+        }
+
+        let weekly_sponsor = 80_000 + i64::from(self.club.reputation) * 1_000;
+        let sponsor_numerator = weekly_sponsor.saturating_add(i64::from(self.sponsor_remainder));
+        let daily_sponsor = sponsor_numerator / 7;
+        self.sponsor_remainder = (sponsor_numerator % 7) as u8;
+        if daily_sponsor > 0 {
+            self.change_balance(daily_sponsor, "Спонсорский доход за день".into());
+        }
     }
 
     fn change_balance(&mut self, delta: i64, description: String) {
@@ -1304,9 +1326,13 @@ mod tests {
         for player in players {
             player.as_object_mut().unwrap().remove("yellow_cards");
         }
+        value.as_object_mut().unwrap().remove("wage_remainder");
+        value.as_object_mut().unwrap().remove("sponsor_remainder");
 
         let restored: Campaign = serde_json::from_value(value).unwrap();
         assert!(restored.club.players.iter().all(|player| player.yellow_cards == 0));
+        assert_eq!(restored.wage_remainder, 0);
+        assert_eq!(restored.sponsor_remainder, 0);
         restored.validate().unwrap();
     }
 
@@ -1330,7 +1356,9 @@ mod tests {
             .sum::<i64>();
         let expected_sponsor = 80_000 + i64::from(campaign.club.reputation) * 1_000;
         let cash_before = campaign.club.cash;
-        campaign.pay_weekly_wages();
+        for _ in 0..7 {
+            campaign.accrue_daily_cashflow();
+        }
         assert_eq!(campaign.club.cash, cash_before - expected_wages + expected_sponsor);
 
         let renewal_cost = campaign.club.players[player_index].renewal_cost();
@@ -1339,6 +1367,80 @@ mod tests {
         campaign.select_player(player_id).unwrap();
         assert!(campaign.is_starter(player_id));
     }
+
+    #[test]
+    fn daily_cashflow_accumulates_exactly_one_week_over_seven_days() {
+        let mut campaign = new_campaign();
+        let expected_wages = campaign.club.players.iter()
+            .filter(|player| player.contract_days > 0)
+            .map(|player| i64::from(player.wage))
+            .sum::<i64>();
+        let expected_sponsor = 80_000 + i64::from(campaign.club.reputation) * 1_000;
+        let cash_before = campaign.club.cash;
+
+        for _ in 0..7 {
+            campaign.accrue_daily_cashflow();
+        }
+
+        assert_eq!(campaign.club.cash, cash_before - expected_wages + expected_sponsor);
+        assert_eq!(campaign.wage_remainder, 0);
+        assert_eq!(campaign.sponsor_remainder, 0);
+    }
+
+    #[test]
+    fn training_day_accrues_fractional_payroll_and_sponsorship() {
+        let mut campaign = new_campaign();
+        let expected_wages = campaign.club.players.iter()
+            .filter(|player| player.contract_days > 0)
+            .map(|player| i64::from(player.wage))
+            .sum::<i64>();
+        let expected_sponsor = 80_000 + i64::from(campaign.club.reputation) * 1_000;
+        let expected_training_cost = 8_000_i64 * i64::from(campaign.club.training_facility);
+        let cash_before = campaign.club.cash;
+
+        campaign.train(TrainingFocus::Fitness).unwrap();
+
+        assert_eq!(
+            campaign.club.cash,
+            cash_before - expected_training_cost - expected_wages / 7 + expected_sponsor / 7
+        );
+        assert_eq!(campaign.club.players[0].contract_days, 729);
+    }
+
+    #[test]
+    fn expired_contract_stops_accruing_wages_after_its_last_active_day() {
+        let mut campaign = new_campaign();
+        let player_id = campaign.club.players[0].id;
+        let player = campaign.club.players.iter_mut()
+            .find(|player| player.id == player_id)
+            .unwrap();
+        player.contract_days = 1;
+        player.wage = 7_000;
+
+        let other_weekly_wages = campaign.club.players.iter()
+            .filter(|player| player.contract_days > 0 && player.id != player_id)
+            .map(|player| i64::from(player.wage))
+            .sum::<i64>();
+        let weekly_sponsor = 80_000 + i64::from(campaign.club.reputation) * 1_000;
+        let cash_before = campaign.club.cash;
+
+        campaign.accrue_daily_cashflow();
+        campaign.club.players.iter_mut()
+            .find(|player| player.id == player_id)
+            .unwrap()
+            .contract_days = 0;
+        for _ in 0..6 {
+            campaign.accrue_daily_cashflow();
+        }
+
+        let player_one_day_wage = 7_000 / 7;
+        assert_eq!(
+            campaign.club.cash,
+            cash_before - other_weekly_wages - player_one_day_wage + weekly_sponsor
+        );
+        assert_eq!(campaign.club.players.iter().find(|player| player.id == player_id).unwrap().contract_days, 0);
+    }
+
 
     #[test]
     fn contract_renewal_is_limited_to_the_final_90_days_and_checks_funds() {
