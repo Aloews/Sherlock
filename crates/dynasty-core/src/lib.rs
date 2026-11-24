@@ -55,6 +55,8 @@ pub struct Player {
     pub morale: u8,
     pub injury_days: u8,
     pub suspension_matches: u8,
+    #[serde(default)]
+    pub yellow_cards: u8,
     pub contract_days: u16,
     pub wage: u32,
     pub appearances: u16,
@@ -517,7 +519,10 @@ impl Campaign {
                 .iter()
                 .filter_map(|id| self.club.players.iter().find(|player| player.id == *id))
                 .filter(|player| player.position == position)
-                .min_by_key(|player| player.overall())
+                .min_by_key(|player| (
+                    player.injury_days == 0 && player.suspension_matches == 0,
+                    player.overall(),
+                ))
                 .map(|player| player.id);
             if let Some(weakest_id) = weakest {
                 if let Some(index) = self
@@ -680,6 +685,25 @@ impl Campaign {
             return Err(DynastyError::SeasonComplete);
         }
 
+        let unavailable_starter = self.club.starting_xi.iter().any(|player_id| {
+            self.club
+                .players
+                .iter()
+                .find(|player| player.id == *player_id)
+                .map(|player| player.injury_days > 7 || player.suspension_matches > 0)
+                .unwrap_or(true)
+        });
+        if unavailable_starter {
+            return Err(DynastyError::PlayerUnavailable);
+        }
+
+        // The next matchday is seven game-days later. Recover the squad and
+        // serve existing bans before applying incidents from the new match.
+        for player in &mut self.club.players {
+            player.injury_days = player.injury_days.saturating_sub(7);
+            player.suspension_matches = player.suspension_matches.saturating_sub(1);
+        }
+
         let mut played = Vec::with_capacity(fixtures.len());
         for fixture in fixtures {
             let home_rating = self.team_strength(fixture.home_team);
@@ -710,7 +734,6 @@ impl Campaign {
         let elapsed_years = self.game_day / 365 - previous_day / 365;
         self.advance_family_and_player_ages(elapsed_years);
         for player in &mut self.club.players {
-            player.injury_days = player.injury_days.saturating_sub(7);
             player.contract_days = player.contract_days.saturating_sub(7);
         }
         self.pay_weekly_wages();
@@ -751,6 +774,7 @@ impl Campaign {
             self.matchday = 1;
             for player in &mut self.club.players {
                 player.fitness = player.fitness.saturating_add(20).min(100);
+                player.yellow_cards = 0;
             }
             self.fixtures = season_fixtures();
             self.transfer_market = generate_market(&mut self.seed);
@@ -871,11 +895,62 @@ impl Campaign {
                 } else {
                     player.morale.saturating_sub(2)
                 };
-                if player.suspension_matches > 0 {
-                    player.suspension_matches -= 1;
+            }
+        }
+
+        let mut incidents = Vec::new();
+        for player_id in self.club.starting_xi.clone() {
+            if let Some(player) = self
+                .club
+                .players
+                .iter_mut()
+                .find(|player| player.id == player_id)
+            {
+                let injury_roll =
+                    match_incident_roll(self.seed, fixture.id, player_id, INJURY_ROLL_SALT);
+                let fatigue_risk = u64::from(100_u8.saturating_sub(player.fitness)) * 15;
+                let age_risk = u64::from(player.age.saturating_sub(28)) * 35;
+                let injury_threshold = (100 + fatigue_risk + age_risk).min(900);
+                if injury_roll % 10_000 < injury_threshold {
+                    let duration = 7 + ((injury_roll / 10_000) % 4) as u8 * 7;
+                    player.injury_days = duration;
+                    incidents.push((
+                        "Травма".to_string(),
+                        format!("{} выбыл на {} дней.", player.name, duration),
+                    ));
+                }
+
+                let discipline_roll =
+                    match_incident_roll(self.seed, fixture.id, player_id, DISCIPLINE_ROLL_SALT)
+                        % 10_000;
+                if discipline_roll < RED_CARD_THRESHOLD {
+                    player.suspension_matches = player.suspension_matches.max(2);
+                    incidents.push((
+                        "Удаление".to_string(),
+                        format!("{} получил красную карточку и пропустит 2 матча.", player.name),
+                    ));
+                } else if discipline_roll < YELLOW_CARD_THRESHOLD {
+                    player.yellow_cards = player.yellow_cards.saturating_add(1);
+                    if player.yellow_cards >= 5 {
+                        player.yellow_cards = 0;
+                        player.suspension_matches = player.suspension_matches.max(1);
+                        incidents.push((
+                            "Дисквалификация".to_string(),
+                            format!("{} пропустит следующий матч после пятой жёлтой карточки.", player.name),
+                        ));
+                    } else {
+                        incidents.push((
+                            "Жёлтая карточка".to_string(),
+                            format!("{} получил предупреждение ({}/5 за сезон).", player.name, player.yellow_cards),
+                        ));
+                    }
                 }
             }
         }
+        for (title, detail) in incidents {
+            self.record_event(&title, detail);
+        }
+
         let user_goals = if fixture.home_team == 0 {
             score.home
         } else {
@@ -1056,6 +1131,7 @@ fn make_player(
         morale: 65,
         injury_days: 0,
         suspension_matches: 0,
+        yellow_cards: 0,
         contract_days: 730,
         wage: u32::from(base).saturating_mul(85),
         appearances: 0,
@@ -1136,6 +1212,22 @@ fn simulate_score(seed: u64, fixture_id: u32, home_rating: i16, away_rating: i16
     Score { home, away }
 }
 
+const INJURY_ROLL_SALT: u64 = 0xA076_1D64_78BD_642F;
+const DISCIPLINE_ROLL_SALT: u64 = 0xE703_7ED1_A0B4_28DB;
+const RED_CARD_THRESHOLD: u64 = 40;
+const YELLOW_CARD_THRESHOLD: u64 = 2_200;
+
+fn match_incident_roll(seed: u64, fixture_id: u32, player_id: u32, salt: u64) -> u64 {
+    let mut state = seed
+        ^ u64::from(fixture_id).wrapping_mul(0x9E37_79B9_7F4A_7C15)
+        ^ u64::from(player_id).wrapping_mul(0xBF58_476D_1CE4_E5B9)
+        ^ salt;
+    if state == 0 {
+        state = 0x8EBC_6AF0_9C88_C6E3;
+    }
+    next(&mut state)
+}
+
 fn next(seed: &mut u64) -> u64 {
     *seed ^= *seed << 13;
     *seed ^= *seed >> 7;
@@ -1149,6 +1241,27 @@ mod tests {
 
     fn new_campaign() -> Campaign {
         Campaign::new("Антон", "ФК Север", 42).unwrap()
+    }
+
+    fn advance_with_best_available_lineup(campaign: &mut Campaign) {
+        let formation = campaign.club.tactics.formation;
+        campaign.set_formation(formation);
+        assert_eq!(campaign.club.starting_xi.len(), 11);
+        campaign.advance_matchday().unwrap();
+    }
+
+    #[test]
+    fn older_local_saves_default_new_player_discipline_fields() {
+        let campaign = new_campaign();
+        let mut value = serde_json::to_value(campaign).unwrap();
+        let players = value["club"]["players"].as_array_mut().unwrap();
+        for player in players {
+            player.as_object_mut().unwrap().remove("yellow_cards");
+        }
+
+        let restored: Campaign = serde_json::from_value(value).unwrap();
+        assert!(restored.club.players.iter().all(|player| player.yellow_cards == 0));
+        restored.validate().unwrap();
     }
 
     #[test]
@@ -1191,6 +1304,112 @@ mod tests {
         campaign.select_player(forward).unwrap();
         assert_eq!(campaign.club.starting_xi.len(), 11);
         assert!(campaign.is_starter(forward));
+    }
+
+    #[test]
+    fn long_term_injuries_and_suspensions_block_the_starting_lineup_until_replaced() {
+        let mut campaign = new_campaign();
+        let unavailable_id = campaign.club.starting_xi[0];
+        let position = campaign
+            .club
+            .players
+            .iter()
+            .find(|player| player.id == unavailable_id)
+            .unwrap()
+            .position;
+        campaign
+            .club
+            .players
+            .iter_mut()
+            .find(|player| player.id == unavailable_id)
+            .unwrap()
+            .injury_days = 14;
+        let replacement_id = campaign
+            .club
+            .players
+            .iter()
+            .find(|player| player.position == position && !campaign.is_starter(player.id))
+            .unwrap()
+            .id;
+
+        assert_eq!(
+            campaign.advance_matchday(),
+            Err(DynastyError::PlayerUnavailable)
+        );
+        assert_eq!(campaign.matchday, 1);
+        assert!(campaign.fixtures.iter().all(|fixture| fixture.score.is_none()));
+
+        campaign.select_player(replacement_id).unwrap();
+        assert!(!campaign.is_starter(unavailable_id));
+        campaign.advance_matchday().unwrap();
+        assert_eq!(campaign.matchday, 2);
+    }
+
+    #[test]
+    fn injury_recovery_and_suspension_bans_advance_with_matchdays() {
+        let mut campaign = new_campaign();
+        let reserve_id = campaign
+            .club
+            .players
+            .iter()
+            .find(|player| !campaign.is_starter(player.id))
+            .unwrap()
+            .id;
+        let reserve = campaign
+            .club
+            .players
+            .iter_mut()
+            .find(|player| player.id == reserve_id)
+            .unwrap();
+        reserve.injury_days = 14;
+        reserve.suspension_matches = 2;
+
+        advance_with_best_available_lineup(&mut campaign);
+        let reserve = campaign.club.players.iter().find(|player| player.id == reserve_id).unwrap();
+        assert_eq!(reserve.injury_days, 7);
+        assert_eq!(reserve.suspension_matches, 1);
+
+        advance_with_best_available_lineup(&mut campaign);
+        let reserve = campaign.club.players.iter().find(|player| player.id == reserve_id).unwrap();
+        assert_eq!(reserve.injury_days, 0);
+        assert_eq!(reserve.suspension_matches, 0);
+    }
+
+    #[test]
+    fn five_yellow_cards_trigger_a_one_match_suspension() {
+        let mut campaign = new_campaign();
+        let fixture = campaign
+            .fixtures
+            .iter()
+            .find(|fixture| fixture.matchday == campaign.matchday && (fixture.home_team == 0 || fixture.away_team == 0))
+            .unwrap()
+            .clone();
+        let player_id = campaign.club.starting_xi[0];
+        let player_name = campaign.club.players.iter().find(|player| player.id == player_id).unwrap().name.clone();
+        let seed = (1..100_000_u64)
+            .find(|seed| {
+                let roll = match_incident_roll(*seed, fixture.id, player_id, DISCIPLINE_ROLL_SALT) % 10_000;
+                (RED_CARD_THRESHOLD..YELLOW_CARD_THRESHOLD).contains(&roll)
+            })
+            .unwrap();
+        campaign.seed = seed;
+        campaign
+            .club
+            .players
+            .iter_mut()
+            .find(|player| player.id == player_id)
+            .unwrap()
+            .yellow_cards = 4;
+        let chronicle_start = campaign.chronicle.len();
+
+        campaign.apply_user_match(&fixture, Score { home: 1, away: 0 });
+
+        let player = campaign.club.players.iter().find(|player| player.id == player_id).unwrap();
+        assert_eq!(player.yellow_cards, 0);
+        assert_eq!(player.suspension_matches, 1);
+        assert!(campaign.chronicle[chronicle_start..].iter().any(|entry| {
+            entry.title == "Дисквалификация" && entry.detail.contains(&player_name)
+        }));
     }
 
     #[test]
@@ -1263,7 +1482,7 @@ mod tests {
         };
         let manager_age = campaign.manager_age;
         for _ in 0..6 {
-            campaign.advance_matchday().unwrap();
+            advance_with_best_available_lineup(&mut campaign);
         }
         assert_eq!(campaign.club.players[0].age, player_age);
         assert_eq!(campaign.heirs[0].age, heir_age);
@@ -1304,7 +1523,7 @@ mod tests {
     fn season_rolls_over_after_six_matchdays() {
         let mut campaign = new_campaign();
         for _ in 0..6 {
-            campaign.advance_matchday().unwrap();
+            advance_with_best_available_lineup(&mut campaign);
         }
         assert_eq!(campaign.season, 2);
         assert_eq!(campaign.matchday, 1);
@@ -1415,5 +1634,7 @@ mod tests {
             first.advance_matchday().unwrap(),
             second.advance_matchday().unwrap()
         );
+        assert_eq!(first.club.players, second.club.players);
+        assert_eq!(first.chronicle, second.chronicle);
     }
 }
