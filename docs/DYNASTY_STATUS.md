@@ -1,5 +1,9 @@
 # Football Dynasty — implementation status
 
+## Relationship to Economic Dynasty
+
+Football Dynasty is the existing fictional football management simulation. **Economic Dynasty is a separate planned product domain** covering economic history, markets, businesses, family capital, institutional memory, and intergenerational decisions. The two may share verified generic simulation infrastructure, but their domain entities, rules, datasets, and financial meanings must remain separate. See `docs/MAP.md` and `docs/ECONOMIC_DYNASTY.md`.
+
 ## Current playable slice
 
 This repository contains an independent Rust implementation. It does not import or connect to the legacy production database.
@@ -38,10 +42,10 @@ Other missing release work includes authenticated server-side persistence, owner
 
 Do not call the mode production-ready until the exact candidate SHA passes:
 
-- \`cargo fmt --all -- --check\`
-- \`cargo clippy --workspace --all-targets -- -D warnings\`
-- \`cargo test --workspace --all-targets\`
-- \`cargo check -p sherlock-web --target wasm32-unknown-unknown\`
+- `cargo fmt --all -- --check`
+- `cargo clippy --workspace --all-targets -- -D warnings`
+- `cargo test --workspace --all-targets`
+- `cargo check -p sherlock-web --target wasm32-unknown-unknown`
 - the Trunk browser bundle build
 - browser journeys for create → reload → squad selection → training → transfer → matchday → season rollover → succession
 - browser storage corruption/recovery and real-device responsive checks

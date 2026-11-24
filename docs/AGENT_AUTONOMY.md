@@ -4,6 +4,14 @@
 
 A repository-owned coding loop for the Rust rewrite. It uses a local Ollama model on a GitHub-hosted runner and separates planning, implementation, and review into role-specific model calls.
 
+## Canonical planning inputs
+
+- Read `docs/MAP.md` for product intent, domain boundaries, priorities, and definition of done.
+- Read `docs/MIGRATION_SCOPE.md` for the active migration scope and sequencing rules.
+- For Economic Dynasty tasks, read `docs/ECONOMIC_DYNASTY.md` as the detailed research, data, simulation, and acceptance contract.
+- The current autonomous task planner reads `docs/MIGRATION_SCOPE.md` directly when it derives a task after the seed backlog is exhausted. Therefore the concise Economic Dynasty scope, priority boundary, and spec link must remain summarized in `docs/MIGRATION_SCOPE.md`; do not assume the planner automatically reads every document.
+- A task touching an established domain must also read that domain's status/spec and the relevant source/tests.
+
 ## Execution sequence
 
 1. A successful run of **Rust CI** on the bootstrap commit activates the first agent iteration.
@@ -37,5 +45,6 @@ The current configured model is `qwen2.5-coder:7b`, served locally by Ollama on 
 - No automatic merge or production deployment is enabled.
 - Hidden admin/operations screens are deferred until primary user-facing flows have been migrated.
 - Green CI proves only the checks that CI actually runs; it does not prove end-to-end feature parity or production readiness.
+- Economic Dynasty is a planned domain, not a licence to interrupt core football parity, create unverified financial claims, or add live providers without a checked source/access/cost contract.
 
 The workflow and state are visible in this directory. The first activation commit is marked with the `[agent-bootstrap]` prefix.

@@ -1,8 +1,16 @@
 # Sherlock
 
-A Rust-first rebuild of the Sherlock Scholes football product.
+A Rust-first rebuild of the Sherlock Scholes football product, with a planned expansion into source-linked economic history, markets, and business/family dynasty simulation.
 
 The legacy application remains in [Aloews/sherlock-scholes-](https://github.com/Aloews/sherlock-scholes-). This repository is a separate implementation; the legacy production application and its data are not modified by work here.
+
+## Project map
+
+- [Product and engineering map](docs/MAP.md) — canonical product domains, priorities, architecture, and agent delivery rules.
+- [Economic Dynasty specification](docs/ECONOMIC_DYNASTY.md) — research hypotheses, evidence standards, historical graph, markets dashboard, and future family/business simulation.
+- [Rust migration scope](docs/MIGRATION_SCOPE.md) — compatibility boundaries, staged gates, and the scope read directly by the autonomous task planner.
+
+Economic Dynasty is planned, not implemented. It does not currently provide live market data, historical ingestion, personal financial connections, or financial recommendations.
 
 ## Current implementation
 
