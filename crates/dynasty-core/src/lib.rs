@@ -81,6 +81,10 @@ impl Player {
         }
     }
 
+    pub fn renewal_cost(&self) -> u32 {
+        self.wage.saturating_mul(4).max(10_000)
+    }
+
     pub fn market_value(&self) -> u32 {
         let rating = u32::from(self.overall());
         let age_factor = if self.age <= 23 {
@@ -282,6 +286,7 @@ pub struct Campaign {
 pub enum DynastyError {
     InvalidName,
     InvalidAge,
+    ContractNotExpiring,
     SquadTooSmall,
     SquadTooLarge,
     PlayerNotFound,
@@ -305,6 +310,7 @@ impl fmt::Display for DynastyError {
         let message = match self {
             Self::InvalidName => "Укажите имя и название клуба",
             Self::InvalidAge => "Возраст должен быть от 16 до 100 лет",
+            Self::ContractNotExpiring => "Продление доступно за 90 дней до окончания контракта",
             Self::SquadTooSmall => "В команде недостаточно игроков",
             Self::SquadTooLarge => "В команде достигнут лимит игроков",
             Self::PlayerNotFound => "Игрок не найден",
@@ -490,7 +496,10 @@ impl Campaign {
             .iter()
             .find(|player| player.id == player_id)
             .ok_or(DynastyError::PlayerNotFound)?;
-        if candidate.injury_days > 0 || candidate.suspension_matches > 0 {
+        if candidate.injury_days > 0
+            || candidate.suspension_matches > 0
+            || candidate.contract_days == 0
+        {
             return Err(DynastyError::PlayerUnavailable);
         }
         if self.is_starter(player_id) {
@@ -616,6 +625,35 @@ impl Campaign {
         Ok(())
     }
 
+    pub fn renew_contract(&mut self, player_id: u32) -> Result<u32, DynastyError> {
+        let index = self
+            .club
+            .players
+            .iter()
+            .position(|player| player.id == player_id)
+            .ok_or(DynastyError::PlayerNotFound)?;
+        let player = &self.club.players[index];
+        if player.contract_days > 90 {
+            return Err(DynastyError::ContractNotExpiring);
+        }
+
+        let cost = player.renewal_cost();
+        if self.club.cash < i64::from(cost) {
+            return Err(DynastyError::InsufficientFunds);
+        }
+        let player_name = player.name.clone();
+        self.club.players[index].contract_days = 730;
+        self.change_balance(
+            -i64::from(cost),
+            format!("Продление контракта: {player_name}"),
+        );
+        self.record_event(
+            "Контракт продлён",
+            format!("{player_name} подписал новое соглашение ещё на 730 дней."),
+        );
+        Ok(cost)
+    }
+
     pub fn sell_player(&mut self, player_id: u32) -> Result<u32, DynastyError> {
         if self.is_starter(player_id) {
             return Err(DynastyError::CannotSellStarter);
@@ -690,7 +728,11 @@ impl Campaign {
                 .players
                 .iter()
                 .find(|player| player.id == *player_id)
-                .map(|player| player.injury_days > 7 || player.suspension_matches > 0)
+                .map(|player| {
+                    player.injury_days > 7
+                        || player.suspension_matches > 0
+                        || player.contract_days == 0
+                })
                 .unwrap_or(true)
         });
         if unavailable_starter {
@@ -1039,6 +1081,7 @@ impl Campaign {
             .club
             .players
             .iter()
+            .filter(|player| player.contract_days > 0)
             .map(|player| i64::from(player.wage))
             .sum::<i64>();
         let sponsor = 80_000 + i64::from(self.club.reputation) * 1_000;
@@ -1092,6 +1135,7 @@ fn best_lineup(players: &[Player], formation: Formation) -> Vec<u32> {
                 player.position == position
                     && player.injury_days == 0
                     && player.suspension_matches == 0
+                    && player.contract_days > 0
             })
             .collect();
         candidates.sort_by_key(|player| std::cmp::Reverse(player.overall()));
