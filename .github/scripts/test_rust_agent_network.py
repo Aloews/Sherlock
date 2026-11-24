@@ -160,6 +160,53 @@ class AgentWritePolicyTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             MODULE.validate_patch(changed_file(body="+" + "x" * MODULE.MAX_PATCH_BYTES))
 
+    def test_patch_must_match_tracked_file_state(self):
+        self.assertEqual(
+            MODULE.validate_patch(
+                changed_file(),
+                existing_paths={"crates/api/src/lib.rs"},
+            ),
+            ["crates/api/src/lib.rs"],
+        )
+        with self.assertRaisesRegex(ValueError, "not tracked"):
+            MODULE.validate_patch(
+                changed_file("crates/api/src/missing.rs"),
+                existing_paths={"crates/api/src/lib.rs"},
+            )
+
+    def test_new_file_patch_cannot_overwrite_existing_path(self):
+        with self.assertRaisesRegex(ValueError, "new file"):
+            MODULE.validate_patch(
+                new_file("crates/web/src/lib.rs"),
+                existing_paths={"crates/web/src/lib.rs"},
+            )
+
+    def test_web_client_rejects_server_runtime_code(self):
+        patch = changed_file(
+            "crates/web/src/main.rs",
+            body="+    axum::serve(listener, app).await.unwrap();",
+        )
+        with self.assertRaisesRegex(ValueError, "WASM client architecture"):
+            MODULE.validate_architecture(patch, ["crates/web/src/main.rs"])
+
+    def test_root_workspace_rejects_package_conversion(self):
+        patch = changed_file("Cargo.toml", body="+[package]")
+        with self.assertRaisesRegex(ValueError, "workspace manifest"):
+            MODULE.validate_architecture(patch, ["Cargo.toml"])
+
+    def test_web_manifest_rejects_server_only_dependencies(self):
+        patch = changed_file(
+            "crates/web/Cargo.toml",
+            body="+axum = { version = '0.8' }",
+        )
+        with self.assertRaisesRegex(ValueError, "server-only"):
+            MODULE.validate_architecture(patch, ["crates/web/Cargo.toml"])
+
+    def test_architecture_contract_is_explicit(self):
+        self.assertIn("Leptos 0.8", MODULE.ARCHITECTURE_CONTRACT)
+        self.assertIn("Do not put Axum routers", MODULE.ARCHITECTURE_CONTRACT)
+        self.assertIn("workspace manifest", MODULE.ARCHITECTURE_CONTRACT)
+
 
 if __name__ == "__main__":
     unittest.main()
