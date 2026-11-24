@@ -774,3 +774,71 @@ h1, h2, p { margin-top: 0; }
   .dynasty-fixture { grid-template-columns: minmax(0,1fr) 54px minmax(0,1fr); padding: 11px 8px; font-size: 9px; }
   .dynasty-bottom-actions { align-items: flex-start; }
 }
+
+
+/* Primary product navigation and honest route shells */
+.primary-navigation {
+  width: min(1120px, calc(100% - 48px));
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(218, 231, 212, .1);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.primary-navigation a {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border-radius: 9px;
+  color: #91a69c;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 800;
+  transition: color .15s ease, background .15s ease;
+}
+.primary-navigation a:hover { color: #f2f5ed; background: rgba(218, 231, 212, .07); }
+.primary-navigation a.active { color: #d8f5a4; background: rgba(199, 243, 107, .11); }
+.route-home { width: min(1120px, calc(100% - 48px)); margin: 0 auto; flex: 1; }
+.route-hidden { display: none !important; }
+.product-home { max-width: 920px; margin: 0 auto; padding: 64px 0 76px; }
+.product-home h1 { margin: 20px 0 12px; font: 700 clamp(38px, 6vw, 64px)/1.04 "Space Grotesk", sans-serif; letter-spacing: -.06em; }
+.product-home h1 span { color: #c7f36b; }
+.product-home-lead { max-width: 650px; color: #96a8a0; font-size: 14px; line-height: 1.7; }
+.home-mode-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; margin-top: 34px; }
+.home-mode-card {
+  min-height: 220px; padding: 25px; display: flex; flex-direction: column; align-items: flex-start;
+  gap: 12px; border: 1px solid rgba(219,231,213,.13); border-radius: 18px;
+  color: #f2f5ed; background: rgba(12,28,39,.82); text-decoration: none;
+  transition: transform .15s ease,border-color .15s ease,background .15s ease;
+}
+.home-mode-card:hover { transform: translateY(-2px); border-color: rgba(199,243,107,.42); background: rgba(18,38,48,.95); }
+.home-mode-kicker { color: #9aada5; font-size: 9px; font-weight: 800; letter-spacing: .17em; }
+.home-mode-card strong { font: 700 24px "Space Grotesk",sans-serif; }
+.home-mode-card > span:not(.home-mode-kicker):not(.home-mode-action) { color: #96a8a0; font-size: 12px; line-height: 1.6; }
+.home-mode-action { margin-top: auto; color: #d8f5a4; font-size: 12px; font-weight: 800; }
+.home-data-note { display: flex; gap: 14px; align-items: flex-start; margin-top: 20px; padding: 19px; border: 1px solid rgba(219,231,213,.1); border-radius: 14px; background: rgba(9,22,31,.55); }
+.home-data-dot { flex: 0 0 auto; width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: #c7f36b; }
+.home-data-note strong { font-size: 12px; }
+.home-data-note p { margin: 6px 0 0; color: #8da297; font-size: 11px; line-height: 1.6; }
+.route-feature { width: min(1120px, calc(100% - 48px)); margin: 0 auto; flex: 1; }
+.feature-page { max-width: 760px; margin: 0 auto; padding: 64px 0 78px; }
+.feature-page h1 { margin: 20px 0 24px; font: 700 clamp(38px, 6vw, 58px)/1.04 "Space Grotesk",sans-serif; letter-spacing: -.055em; }
+.feature-status { display: flex; align-items: center; gap: 11px; padding: 15px 17px; border: 1px solid rgba(236,192,113,.23); border-radius: 12px; background: rgba(236,192,113,.07); color: #e9c98f; font-size: 12px; }
+.feature-status-mark { width: 8px; height: 8px; border-radius: 50%; background: #e9b45e; }
+.feature-detail { margin: 21px 0 0; color: #a2b1a8; font-size: 14px; line-height: 1.8; }
+.feature-data-contract { margin-top: 30px; padding: 20px; border: 1px solid rgba(219,231,213,.12); border-radius: 14px; background: rgba(12,28,39,.72); }
+.feature-data-contract strong { font-size: 12px; }
+.feature-data-contract p { margin: 8px 0 0; color: #8da297; font-size: 12px; line-height: 1.7; }
+.feature-back-link { display: inline-block; margin-top: 26px; color: #d8f5a4; text-decoration: none; font-size: 12px; font-weight: 800; }
+.feature-back-link:hover { color: #fff; }
+@media (max-width: 640px) {
+  .primary-navigation { width: calc(100% - 32px); gap: 2px; padding: 9px 0; }
+  .primary-navigation a { padding: 9px 10px; font-size: 10px; }
+  .route-home, .route-feature { width: calc(100% - 32px); }
+  .product-home, .feature-page { padding: 38px 0 50px; }
+  .home-mode-grid { grid-template-columns: 1fr; gap: 12px; margin-top: 24px; }
+  .home-mode-card { min-height: 190px; padding: 20px; }
+  .feature-detail { font-size: 13px; }
+}
