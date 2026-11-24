@@ -62,6 +62,7 @@ enum PrimaryRoute {
 }
 
 impl PrimaryRoute {
+    #[cfg(any(target_arch = "wasm32", test))]
     fn from_hash(hash: &str) -> Self {
         let path = hash
             .strip_prefix("#/")
@@ -245,6 +246,10 @@ pub fn App() -> impl IntoView {
             drop(listener);
         });
     }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    let _ = set_active_route;
+
     let (team_one, set_team_one) = signal("Команда 1".to_string());
     let (team_two, set_team_two) = signal("Команда 2".to_string());
     let (round_length, set_round_length) = signal("60".to_string());
@@ -600,7 +605,10 @@ pub fn App() -> impl IntoView {
                     PrimaryRoute::Fantasy => view! { <FantasyPage/> }.into_any(),
                     PrimaryRoute::News => view! { <NewsPage/> }.into_any(),
                     PrimaryRoute::AmateurFootball => view! { <AmateurFootballPage/> }.into_any(),
-                    _ => view! { <></> }.into_any(),
+                    _ => {
+                        let _: () = view! { <></> };
+                        ().into_any()
+                    },
                 }}
             </section>
             <footer class="footer">
