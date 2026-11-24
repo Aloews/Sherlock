@@ -316,12 +316,24 @@ pub fn DynastyApp() -> impl IntoView {
                                                     let player_id = player.id;
                                                     let starter = save.club.starting_xi.contains(&player_id);
                                                     let unavailable = player.injury_days > 0 || player.suspension_matches > 0;
+                                                    let availability_detail = if player.injury_days > 0 {
+                                                        format!("Травма · {} дн.", player.injury_days)
+                                                    } else if player.suspension_matches > 0 {
+                                                        format!("Дисквалификация · {} матч.", player.suspension_matches)
+                                                    } else {
+                                                        "Доступен".to_string()
+                                                    };
+                                                    let discipline_detail = if player.yellow_cards > 0 {
+                                                        format!(" · ЖК {}/5", player.yellow_cards)
+                                                    } else {
+                                                        String::new()
+                                                    };
                                                     view! {
                                                         <article class="dynasty-player-row">
                                                             <div class="dynasty-player-rating">{player.overall()}</div>
                                                             <div class="dynasty-player-main">
                                                                 <strong>{player.name.clone()}</strong>
-                                                                <span>{format!("{} · {} лет · потенциал {}", player.position.label(), player.age, player.potential)}</span>
+                                                                <span>{format!("{} · {} лет · потенциал {} · {}{}", player.position.label(), player.age, player.potential, availability_detail, discipline_detail)}</span>
                                                             </div>
                                                             <div class="dynasty-player-career">
                                                                 <strong>{format!("{} гол.", player.goals)}</strong>
