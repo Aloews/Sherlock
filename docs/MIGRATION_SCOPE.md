@@ -62,6 +62,7 @@ After the primary user-facing product has passed its gates, migrate hidden admin
 ## Current implementation in this repository
 
 - Rust workspace with Axum API, a pure Rust game-core crate, and a Leptos WebAssembly client.
+- Primary hash navigation for Home, Alias, Players, Clubs, Matches, Statistics, Forecasts, Fantasy, News, Amateur Football and Dynasty. The two local game modes remain playable; routes without authoritative services explicitly report unavailable data and do not render mock football facts.
 - `GET /healthz` endpoint in the API crate.
 - Local two-team Football Alias match flow: setup, category selection, timed rounds, correct/skip actions, score tracking, alternating teams, round summaries, and final result.
 - Local Football Dynasty career flow: fictional 22-player squad, lineup/formation management, training, transfer market, club cash ledger, deterministic four-club league, six-matchday season simulation, standings, player match records, heirs and succession. Save data is stored in the browser only.
