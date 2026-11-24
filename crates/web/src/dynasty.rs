@@ -110,7 +110,7 @@ pub fn DynastyApp() -> impl IntoView {
                         set_notice.set(Some(error.to_string()));
                     }
                 }
-                save_and_set(created, set_campaign, set_notice);
+                let _ = save_and_set(created, set_campaign, set_notice);
             }
             Err(error) => set_notice.set(Some(error.to_string())),
         };
@@ -298,7 +298,7 @@ pub fn DynastyApp() -> impl IntoView {
                                                                 _ => Formation::FourThreeThree,
                                                             };
                                                             updated.set_formation(formation);
-                                                            save_and_set(updated, set_campaign, set_notice);
+                                                            let _ = save_and_set(updated, set_campaign, set_notice);
                                                         }
                                                     }>
                                                     <option value="433">"4–3–3"</option>
