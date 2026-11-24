@@ -41,10 +41,19 @@ fn save_and_set(
     campaign: Campaign,
     set_campaign: WriteSignal<Option<Campaign>>,
     set_notice: WriteSignal<Option<String>>,
-) {
-    let persistence_error = save_campaign(&campaign).err();
+) -> Result<(), String> {
+    let persistence_result = save_campaign(&campaign);
     set_campaign.set(Some(campaign));
-    set_notice.set(persistence_error);
+    match persistence_result {
+        Ok(()) => {
+            set_notice.set(None);
+            Ok(())
+        }
+        Err(error) => {
+            set_notice.set(Some(error.clone()));
+            Err(error)
+        }
+    }
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -101,7 +110,7 @@ pub fn DynastyApp() -> impl IntoView {
                         set_notice.set(Some(error.to_string()));
                     }
                 }
-                save_and_set(created, set_campaign, set_notice);
+                let _ = save_and_set(created, set_campaign, set_notice);
             }
             Err(error) => set_notice.set(Some(error.to_string())),
         };
@@ -115,8 +124,9 @@ pub fn DynastyApp() -> impl IntoView {
                         .map(|(fixture, score)| format!("{fixture}: {}:{}", score.home, score.away))
                         .collect::<Vec<_>>()
                         .join(" · ");
-                    save_and_set(updated, set_campaign, set_notice);
-                    set_notice.set(Some(text));
+                    if save_and_set(updated, set_campaign, set_notice).is_ok() {
+                        set_notice.set(Some(text));
+                    }
                 }
                 Err(error) => set_notice.set(Some(error.to_string())),
             }
@@ -127,10 +137,11 @@ pub fn DynastyApp() -> impl IntoView {
         if let Some(mut updated) = campaign.get() {
             match updated.train(next_training_focus(&focus.get())) {
                 Ok(improved) => {
-                    save_and_set(updated, set_campaign, set_notice);
-                    set_notice.set(Some(format!(
-                        "Тренировка завершена. Игроков с ростом общего рейтинга: {improved}."
-                    )));
+                    if save_and_set(updated, set_campaign, set_notice).is_ok() {
+                        set_notice.set(Some(format!(
+                            "Тренировка завершена. Игроков с ростом общего рейтинга: {improved}."
+                        )));
+                    }
                 }
                 Err(error) => set_notice.set(Some(error.to_string())),
             }
@@ -141,7 +152,9 @@ pub fn DynastyApp() -> impl IntoView {
         if let Some(mut updated) = campaign.get() {
             let age = heir_age.get().parse::<u8>().unwrap_or(0);
             match updated.add_heir(&heir_name.get(), age) {
-                Ok(()) => save_and_set(updated, set_campaign, set_notice),
+                Ok(()) => {
+                    let _ = save_and_set(updated, set_campaign, set_notice);
+                },
                 Err(error) => set_notice.set(Some(error.to_string())),
             }
         }
@@ -285,7 +298,7 @@ pub fn DynastyApp() -> impl IntoView {
                                                                 _ => Formation::FourThreeThree,
                                                             };
                                                             updated.set_formation(formation);
-                                                            save_and_set(updated, set_campaign, set_notice);
+                                                            let _ = save_and_set(updated, set_campaign, set_notice);
                                                         }
                                                     }>
                                                     <option value="433">"4–3–3"</option>
@@ -319,7 +332,9 @@ pub fn DynastyApp() -> impl IntoView {
                                                                 on:click=move |_| {
                                                                     if let Some(mut updated) = campaign.get() {
                                                                         match updated.select_player(player_id) {
-                                                                            Ok(()) => save_and_set(updated, set_campaign, set_notice),
+                                                                            Ok(()) => {
+    let _ = save_and_set(updated, set_campaign, set_notice);
+},
                                                                             Err(error) => set_notice.set(Some(error.to_string())),
                                                                         }
                                                                     }
@@ -385,7 +400,9 @@ pub fn DynastyApp() -> impl IntoView {
                                                             <button type="button" class="dynasty-mini-button" on:click=move |_| {
                                                                 if let Some(mut updated) = campaign.get() {
                                                                     match updated.sign_player(id) {
-                                                                        Ok(()) => save_and_set(updated, set_campaign, set_notice),
+                                                                        Ok(()) => {
+    let _ = save_and_set(updated, set_campaign, set_notice);
+},
                                                                         Err(error) => set_notice.set(Some(error.to_string())),
                                                                     }
                                                                 }
@@ -426,7 +443,9 @@ pub fn DynastyApp() -> impl IntoView {
                                                                 on:click=move |_| {
                                                                     if let Some(mut updated) = campaign.get() {
                                                                         match updated.retire_to_heir(heir_id) {
-                                                                            Ok(()) => save_and_set(updated, set_campaign, set_notice),
+                                                                            Ok(()) => {
+    let _ = save_and_set(updated, set_campaign, set_notice);
+},
                                                                             Err(error) => set_notice.set(Some(error.to_string())),
                                                                         }
                                                                     }
@@ -485,7 +504,9 @@ pub fn DynastyApp() -> impl IntoView {
                                                     <button type="button" class="dynasty-mini-button" disabled=active.club.training_facility >= 5 on:click=move |_| {
                                                                 if let Some(mut updated) = campaign.get() {
                                                                     match updated.upgrade_training_facility() {
-                                                                        Ok(()) => save_and_set(updated, set_campaign, set_notice),
+                                                                        Ok(()) => {
+    let _ = save_and_set(updated, set_campaign, set_notice);
+},
                                                                         Err(error) => set_notice.set(Some(error.to_string())),
                                                                     }
                                                                 }
