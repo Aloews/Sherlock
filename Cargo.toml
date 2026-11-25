@@ -4,6 +4,7 @@ members = [
     "crates/api",
     "crates/game-core",
     "crates/dynasty-core",
+    "crates/world-core",
     "crates/web",
 ]
 
