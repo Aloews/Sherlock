@@ -1,8 +1,16 @@
 # Sherlock
 
-A Rust-first rebuild of the Sherlock Scholes football product.
+A Rust-first rebuild of the Sherlock Scholes product, with a planned evolution into a persistent whole-world simulation.
 
 The legacy application remains in [Aloews/sherlock-scholes-](https://github.com/Aloews/sherlock-scholes-). This repository is a separate implementation; the legacy production application and its data are not modified by work here.
+
+## Product direction
+
+Sherlock's long-term world is broader than football. It is designed to model interacting geography, environment, population, culture, knowledge, technology, production, trade, finance, institutions, politics and individual lives across time and generations. Football is one specialized domain within that world—not the world's organizing boundary. Football clubs, players, competitions, supporters and real football reference data should connect to the wider economy and society while remaining a clearly bounded domain.
+
+The whole-world architecture and phased implementation proposal are documented in [Historical World Simulation](docs/HISTORICAL_WORLD_SIMULATION.md). This is a proposed specification, not a claim that the world simulation is implemented. The current playable scope remains limited as described below.
+
+The legacy application remains the source baseline for football-product migration. Real-world football facts, fictional Football Dynasty campaign state, and any future historical/simulated world state must remain distinguishable and carry appropriate provenance.
 
 ## Current implementation
 
