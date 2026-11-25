@@ -22,7 +22,11 @@ pub enum ResourceKind {
 pub struct ResourceDeposit {
     pub kind: ResourceKind,
     pub stock: u64,
-    pub annual_regeneration: u64,
+    /// Regeneration per simulation tick; calendar conversion is a world-level rule.
+    pub regeneration_per_tick: u64,
+    /// Optional hard ecological stock limit.
+    #[serde(default)]
+    pub capacity: Option<u64>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -103,6 +107,8 @@ pub enum WorldError {
         available: u64,
     },
     ArithmeticOverflow,
+    InvalidResourceDeposit { settlement_id: EntityId, kind: ResourceKind },
+    SettlementIdMismatch { map_id: EntityId, settlement_id: EntityId },
     SelfTrade,
     ZeroTradeQuantity,
     ZeroUnitPrice,
@@ -130,6 +136,14 @@ impl World {
         }
         if self.settlements.contains_key(&settlement.id) {
             return Err(WorldError::DuplicateSettlementId(settlement.id));
+        }
+        for (key, deposit) in &settlement.deposits {
+            if *key != deposit.kind || deposit.capacity.is_some_and(|cap| deposit.stock > cap) {
+                return Err(WorldError::InvalidResourceDeposit {
+                    settlement_id: settlement.id,
+                    kind: deposit.kind,
+                });
+            }
         }
         self.settlements.insert(settlement.id, settlement);
         Ok(())
@@ -256,10 +270,11 @@ impl World {
 
             for deposit in settlement.deposits.values_mut() {
                 let before = deposit.stock;
-                deposit.stock = deposit
-                    .stock
-                    .checked_add(deposit.annual_regeneration)
+                let regenerated_stock = deposit.stock
+                    .checked_add(deposit.regeneration_per_tick)
                     .ok_or(WorldError::ArithmeticOverflow)?;
+                deposit.stock = deposit.capacity
+                    .map_or(regenerated_stock, |capacity| regenerated_stock.min(capacity));
                 let regenerated = deposit.stock - before;
                 if regenerated > 0 {
                     next.event_log.push(WorldEvent::ResourceRegenerated {
@@ -280,12 +295,26 @@ impl World {
     }
 
     pub fn validate(&self) -> Result<(), WorldError> {
-        for settlement in self.settlements.values() {
+        for (map_id, settlement) in &self.settlements {
+            if *map_id != settlement.id {
+                return Err(WorldError::SettlementIdMismatch {
+                    map_id: *map_id,
+                    settlement_id: settlement.id,
+                });
+            }
             if settlement.name.trim().is_empty() {
                 return Err(WorldError::EmptySettlementName);
             }
             if settlement.population == 0 {
                 return Err(WorldError::ZeroPopulation);
+            }
+            for (key, deposit) in &settlement.deposits {
+                if *key != deposit.kind || deposit.capacity.is_some_and(|cap| deposit.stock > cap) {
+                    return Err(WorldError::InvalidResourceDeposit {
+                        settlement_id: settlement.id,
+                        kind: deposit.kind,
+                    });
+                }
             }
         }
         Ok(())
@@ -311,7 +340,8 @@ mod tests {
                 ResourceDeposit {
                     kind: ResourceKind::Timber,
                     stock: 20,
-                    annual_regeneration: 2,
+                    regeneration_per_tick: 2,
+                    capacity: Some(100),
                 },
             )]),
         }
@@ -449,6 +479,38 @@ mod tests {
         let encoded = serde_json::to_vec(&world).unwrap();
         let decoded: World = serde_json::from_slice(&encoded).unwrap();
         assert_eq!(decoded, world);
+    }
+
+    #[test]
+    fn resource_regeneration_respects_capacity() {
+        let mut world = World::new(1, 2);
+        let mut town = settlement(7, 10, 5);
+        town.deposits.insert(ResourceKind::Iron, ResourceDeposit {
+            kind: ResourceKind::Iron,
+            stock: 99,
+            regeneration_per_tick: 5,
+            capacity: Some(100),
+        });
+        world.add_settlement(town).unwrap();
+        world.advance_tick().unwrap();
+        assert_eq!(world.settlements[&7].deposits[&ResourceKind::Iron].stock, 100);
+    }
+
+    #[test]
+    fn invalid_deposit_capacity_is_rejected_before_insertion() {
+        let mut world = World::new(1, 2);
+        let mut town = settlement(7, 10, 5);
+        town.deposits.insert(ResourceKind::Iron, ResourceDeposit {
+            kind: ResourceKind::Iron,
+            stock: 101,
+            regeneration_per_tick: 1,
+            capacity: Some(100),
+        });
+        assert!(matches!(
+            world.add_settlement(town),
+            Err(WorldError::InvalidResourceDeposit { settlement_id: 7, kind: ResourceKind::Iron })
+        ));
+        assert!(world.settlements.is_empty());
     }
 
     #[test]
