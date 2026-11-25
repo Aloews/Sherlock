@@ -8,15 +8,33 @@ Authoritative concept: [PRODUCT_CONCEPT.md](PRODUCT_CONCEPT.md).
 
 ## Current repository reality (2026-11-24)
 
-The repository is a Rust-first rebuild, but its current product is still a narrow local prototype:
+The repository is a Rust-first rebuild, and the historical world engine is at an early domain-prototype stage. The current branch adds atomic settlement trade, integer treasury balances, per-tick resource regeneration with capacity limits, and snapshot serialization tests. These are domain foundations, not a playable or persistent civilization simulation:
 - Axum API currently exposes a health endpoint.
 - Leptos/WASM client contains local Alias and Football Dynasty experiences.
 - Dynasty saves in browser local storage; it is not a server-authoritative world simulation.
 - Current Dynasty teams/players and league simulation are fictional and deterministic.
-- The existing workspace has no accepted civilization-scale world engine, historical evidence pipeline, persistent event log or integrated finance/institution/dynasty model.
+- `sherlock-world-core` now contains a deterministic tick prototype, food production/consumption, resource regeneration, settlement inventories, atomic bilateral trade, treasury balances and an in-memory causal event log.
+- The current world snapshot can be serialized and deserialized in a unit test; this is not PostgreSQL persistence, event sourcing, durable replay or multi-user ownership.
+- Geographic locations, explicit calendar/time scales, population cohorts, labor, production sites, logistics, pricing markets, evidence provenance, API integration and PostgreSQL persistence remain unimplemented.
 - README and MIGRATION_SCOPE describe the earlier football-product migration. They are not the new product north star and must be reconciled without deleting useful compatibility requirements.
 
 No production readiness or feature parity is implied by this map.
+
+## Current world-engine implementation status
+
+The following code is present on the `feat/world-engine-agent-readiness` branch and must not be described as merged or production-ready until its PR is merged and exact-head CI is green:
+
+- `crates/world-core` is registered in the Cargo workspace.
+- Settlements have food production/consumption, resource deposits, inventories and integer treasury balances.
+- Tick advancement is deterministic for the same state and uses stable `BTreeMap` ordering.
+- Tick advancement and bilateral trade are atomic: failed validation or arithmetic leaves the original world unchanged.
+- Resource regeneration is explicitly per simulation tick and can be capped by an ecological capacity; no annual-to-tick conversion is claimed.
+- Trade transfers inventory and integer minor currency units and appends a causal `TradeExecuted` event.
+- Snapshot serialization round-trip is covered by a unit test.
+
+**Not implemented yet:** canonical geography/location entities, versioned event envelopes, actor/command/provenance metadata, command replay, persistent API, PostgreSQL snapshots/event store, authentication/ownership, scenario creation UI, and a complete playable loop. The first milestone remains **in progress and unaccepted**.
+
+The autonomous Rust agent backlog is seeded with `WORLD-001` through `WORLD-005`. Its planner is aligned to this MAP and PRODUCT_CONCEPT so new tasks follow the world-simulation dependency order rather than the previous football migration backlog. Every iteration must pass exact-head Rust CI, WASM checks, tests, and an independent reviewer pass before another iteration is eligible.
 
 ## Product boundaries
 
