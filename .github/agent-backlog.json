@@ -1,85 +1,60 @@
 {
-  "version": 1,
-  "description": "Ordered seed tasks for the Rust migration; after these, the planning role derives one bounded task at a time from docs/MIGRATION_SCOPE.md.",
+  "version": 2,
+  "description": "Ordered bounded tasks for Sherlock Historical World Simulation. The autonomous planner must follow docs/MAP.md and docs/PRODUCT_CONCEPT.md. The first persistent material-world vertical slice takes priority over legacy football parity.",
   "tasks": [
     {
-      "id": "WEB-001",
-      "title": "Create the Leptos WebAssembly client crate",
-      "objective": "Add a compilable Rust client crate to the workspace using the stable Leptos 0.8 line with client-side rendering. Add the minimum Trunk entry point and bootstrap HTML needed to build to wasm32-unknown-unknown. Do not add fake player, match, club, forecast or account data.",
+      "id": "WORLD-001",
+      "title": "Add geographic locations and settlement placement",
+      "objective": "Introduce canonical geographic locations with stable IDs, names, resource-bearing stocks and optional ecological capacities. Link settlements to locations without duplicating resource state. Preserve deterministic ordering and validate missing or mismatched references. Keep the domain pure Rust in sherlock-world-core.",
       "acceptance": [
-        "The web crate is a workspace member and cargo check -p sherlock-web --target wasm32-unknown-unknown succeeds.",
-        "The client mounts a real Leptos root component and has a small test or compile-time assertion covering its application entry contract.",
-        "The existing Axum API crate and its health endpoint remain intact."
+        "A world can contain multiple locations and at least two settlements linked to distinct or shared locations.",
+        "Resource deposits have explicit per-tick regeneration and optional capacity; invalid stock/capacity states are rejected.",
+        "Adding an invalid location or settlement is atomic and leaves the world unchanged.",
+        "Tests cover duplicate IDs, missing location references, deterministic serialization and resource-capacity boundaries."
       ]
     },
     {
-      "id": "WEB-002",
-      "title": "Add primary user-facing route shells and navigation",
-      "objective": "Implement the first coherent navigation shell in the Rust client for Home, Football Alias, Players, Clubs, Matches, Statistics, Forecasts, Fantasy, News, Amateur Football and Football Dynasty. Keep hidden admin and operations routes out of the primary user navigation.",
+      "id": "WORLD-002",
+      "title": "Define versioned causal commands and event envelopes",
+      "objective": "Replace ad hoc event payload assumptions with a versioned, typed causal envelope that records event ID/order, world tick, actor, command/cause, affected entity IDs, ruleset version and evidence provenance category. Preserve deterministic serialization and compatibility for the current prototype where feasible.",
       "acceptance": [
-        "Every primary destination has a real route and a distinct route component.",
-        "Navigation works on narrow and wide layouts and the current route is represented accessibly.",
-        "No page displays invented live football facts or mock account data."
+        "Every material world mutation emits a typed versioned event with actor, cause, tick and affected entities.",
+        "Historical source facts, derived estimates, model assumptions and generated outcomes are distinct types.",
+        "Event ordering is stable and validated; malformed or unsupported event versions fail explicitly.",
+        "Tests cover serialization, invalid envelopes, deterministic event ordering and atomic failure."
       ]
     },
     {
-      "id": "WEB-003",
-      "title": "Implement honest loading, error and empty states",
-      "objective": "Add reusable client-side states for loading, request failure, empty results and unavailable data. Preserve the data rule that missing is not zero and partial coverage is not presented as complete.",
+      "id": "WORLD-003",
+      "title": "Implement deterministic command replay",
+      "objective": "Add a typed world command sequence and replay engine that reconstructs the same state and event history from a known initial snapshot, ruleset version and ordered commands. Reject invalid commands without partially mutating state. Do not claim randomness is implemented merely because a seed is stored.",
       "acceptance": [
-        "State components are reusable and have focused tests.",
-        "Empty and unavailable data are visually distinct from valid zero values.",
-        "Error states provide a usable retry path where a retryable request exists."
+        "A fixed initial state and command sequence produce byte-stable canonical snapshots across repeated runs.",
+        "Replay rejects invalid commands and leaves the last committed state unchanged.",
+        "Event sequence and resulting state are compared in regression tests.",
+        "Tests cover replay after multiple ticks, trade, invalid command and overflow."
       ]
     },
     {
-      "id": "API-001",
-      "title": "Add versioned API routing and typed error responses",
-      "objective": "Extend the Axum API with a versioned /api/v1 router, a typed error response contract and request-level tests while retaining /healthz for infrastructure health checks.",
+      "id": "WORLD-004",
+      "title": "Expose versioned world lifecycle API",
+      "objective": "Add typed Axum /api/v1 world endpoints for creating, reading and advancing a simulation through the world-core command boundary. Retain /healthz, use stable machine-readable errors, and do not use fixtures or browser local storage as authoritative world state.",
       "acceptance": [
-        "The versioned router is composed without removing the existing health route.",
-        "Error responses have stable machine-readable codes and do not leak internal error details.",
-        "Axum tests exercise success and error responses without relying on production services."
+        "API routes are versioned and compose with the existing health route.",
+        "Create/read/advance requests use typed contracts and call sherlock-world-core rather than reimplementing rules.",
+        "Invalid commands return stable error codes without leaking internals or partially changing state.",
+        "Router tests cover successful create/read/advance, missing world and domain validation errors."
       ]
     },
     {
-      "id": "DOMAIN-001",
-      "title": "Introduce strongly typed football entity identifiers",
-      "objective": "Create Rust newtypes for player, club, fixture and competition identifiers and use them in a small set of domain contracts. Avoid stringly typed identifiers and do not assume undocumented production columns.",
+      "id": "WORLD-005",
+      "title": "Persist world snapshots and causal events in PostgreSQL",
+      "objective": "Add additive PostgreSQL migrations and a persistence adapter for world snapshots and append-only event history. Define ownership boundaries and transaction/idempotency behavior. Use disposable test databases or explicit opt-in integration tests; never connect to or alter the legacy production Supabase project.",
       "acceptance": [
-        "Identifier types validate their documented representation and support serde where required.",
-        "Unit tests cover valid and invalid identifiers.",
-        "Real football entities remain distinct from fictional Football Dynasty entities."
-      ]
-    },
-    {
-      "id": "DOMAIN-002",
-      "title": "Define player profile and statistics domain contracts",
-      "objective": "Add explicit Rust read models for player identity/profile, career totals and season totals. Keep match statistics separate and represent unknown values distinctly from numeric zero.",
-      "acceptance": [
-        "Career, season and match statistics are represented by separate types.",
-        "Missing values remain optional or explicitly unknown and are not converted to zero.",
-        "Serialization and invariant tests cover the contracts."
-      ]
-    },
-    {
-      "id": "API-002",
-      "title": "Add typed read contracts for clubs and fixtures",
-      "objective": "Add stable Rust API contracts for club identity, squad coverage and fixture/result summaries. Include provenance and observation timestamps where supported; do not claim live data until a real repository is connected.",
-      "acceptance": [
-        "Club and fixture contracts are typed and serializable.",
-        "Partial squad or fixture coverage can be represented explicitly.",
-        "Tests prove that missing coverage is not serialized as a complete or zero-valued result."
-      ]
-    },
-    {
-      "id": "WEB-004",
-      "title": "Connect the Rust client to the versioned API boundary",
-      "objective": "Create a typed client adapter for the new /api/v1 contract, including request failure handling and testable transport boundaries. Do not add production credentials or bypass server-side authorization.",
-      "acceptance": [
-        "The client uses typed request and response contracts rather than ad hoc JSON parsing.",
-        "Network failure and non-success HTTP responses become explicit UI states.",
-        "Tests exercise success, HTTP error and unavailable-server behavior."
+        "A world snapshot and its event history round-trip through PostgreSQL without loss.",
+        "Mutating commands persist state and events in one transaction and are idempotent under a stable command ID.",
+        "Migrations are additive, versioned and tested against a disposable database.",
+        "Integration tests require an explicit test database URL and never fall back to production credentials or endpoints."
       ]
     }
   ]
